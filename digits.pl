@@ -15,8 +15,8 @@ say 't10k data loaded';
 my $nerl = AI::Nerl->new(
    # type => image,dims=>[28,28],...
    scale_input => 256,
-   train_data => $images(0:7999),
-   train_labels => $labels(0:7999),
+   train_data => $images(0:79),
+   train_labels => $labels(0:79),
    test_data => $images(8000:8999),
    test_labels => $labels(8000:8999),
    cv_data => $images(9000:9999),

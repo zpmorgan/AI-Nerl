@@ -25,7 +25,10 @@ my $img_pdl = pdl(unpack('C*',$img_data));
 
 use PDL::Graphics2D;
 
-if ($dims[1]==28){ #images
+if(!defined($dims[1])){
+   $img_pdl = $img_pdl->squeeze;
+}
+elsif ($dims[1]==28){ #images
    @dims = (28**2,$dims[0]);
    $img_pdl = $img_pdl->reshape(@dims)->transpose();
    #imag2d($img_pdl(3000)->reshape(28,28)/256);

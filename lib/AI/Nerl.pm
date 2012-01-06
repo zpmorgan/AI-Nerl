@@ -1,6 +1,5 @@
 package AI::Nerl;
-use Moose;
-
+use Moose 'has',inner => { -as => 'moose_inner' };
 use PDL;
 use AI::Nerl::Network;
 
@@ -35,9 +34,10 @@ sub build_network{
    my $nn = AI::Nerl::Network->new(
       l1 => $self->train_data->dim(1),
       l2 => 30,
-      l3 => $self->train_labels->dim(0),
+      l3 => 10,#$self->train_labels->uniq->dim(0),
       scale_input => $self->scale_input,
    );
+   $nn->train($self->train_data,$self->train_labels);
    $self->network($nn);
 }
 

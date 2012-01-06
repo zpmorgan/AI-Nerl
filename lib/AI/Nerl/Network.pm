@@ -1,12 +1,11 @@
 package AI::Nerl::Network;
-use Moose;
+use Moose 'has', inner => { -as => 'moose_inner' };
 use PDL;
 use PDL::NiceSlice;
 use PDL::Constants 'E';
 
 # Simple nn with 1 hidden layer
 # train with $nn->train(data,labels);
-
 has scale_input => (
    is => 'ro',
    required => 0,
@@ -47,33 +46,35 @@ sub _mk_theta2{
 }
 
    my ($labels,$delta,$out_neurons, $img,$id,$images,$pass);
+
 sub train{
    my ($self,$x,$y) = @_;
+   my $id = identity($self->l3);
    if ($self->scale_input){
       $x *= $self->scale_input;
    }
+   my $num_examples = $x->dim(0);
    for my $pass (1..9){
-      my $delta1 = $self->theta1 * 0;   
-      my $delta2 = $self->theta2 * 0;   
+      show784($self->theta1->slice(':,1'));
+      my $delta1 = $self->theta1 * 0;
+      my $delta2 = $self->theta2 * 0; 
       #iterate over examples :(
-      for my $i (0..$x->dim(0)-1){
-         my $a1 = $x($i);
-         my $z2 = $self->theta1 x $a1->transpose;
-         my $a2 = sigmoid($a1);
-         my $z3 = $self->theta2 x $a2->transpose;
+      for my $i (0..$num_examples-1){
+         my $a1 = $x(($i));
+         my $z2 = ($self->theta1 x $a1->transpose)->squeeze;
+         my $a2 = sigmoid($z2);
+         my $z3 = ($self->theta2 x $a2->transpose)->squeeze;
          my $a3 = sigmoid($z3);
-         die $a3;
-         next;
+         my $label = $y(($i));
          
-         
-         my $a =  sigmoid($out_neurons x $img->transpose); #(t,10)
-         #arn $out_neurons x $img->transpose if $pass > 1;; #(t,10)
-         $a = $a((0));
-         my $label = $labels(($i));
-         my $d= $id(($label)) - $a;
-         $d = -$d * $a * (1-$a); #(t,10)
-         $delta += $d->transpose x $img;
+         my $d3= -($id(($label)) - $a3) * logistic($z3);
+         $delta2 += $d3->transpose x $a2;
+
+         my $d2 = ($self->theta2->transpose x $d3->transpose)->squeeze * logistic($z2);
+         $delta1 += $d2->transpose x $a1;
       }
+      $self->{theta2} += $delta2 * $self->alpha;
+      $self->{theta1} += $delta1 * $self->alpha;
    }
    return;
    $delta /= $images->dim(0);
@@ -98,9 +99,10 @@ sub logistic{
    return $foo * (1-$foo);
 }
 
+use PDL::Graphics2D;
 sub show784{
-   eval 'use PDL::Graphics2D';
    my $w = shift;
+   warn join',', $w->dims;
    $w = $w->squeeze;
    my $min = $w->minimum;
    $w -= $min;
