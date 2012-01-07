@@ -11,10 +11,10 @@ my $labels = rfits('t10k-labels-idx1-ubyte.fits');
 say 't10k data loaded';
 #my $label_targets = identity(10)->($labels);
 my $id = identity(10);
-$images = $images(10:11);
+$images = $images(10:111);
 show784($images(0));
 show784($images(1));
-$labels = $labels(10:11);
+$labels = $labels(10:111);
 
 my $out_neurons = grandom(28*28,10) * .01;
 # http://ufldl.stanford.edu/wiki/index.php/Backpropagation_Algorithm

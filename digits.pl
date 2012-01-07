@@ -10,17 +10,18 @@ use AI::Nerl;
 
 my $images = rfits('t10k-images-idx3-ubyte.fits');
 my $labels = rfits('t10k-labels-idx1-ubyte.fits');
+my $y = identity(10)->range($labels->transpose)->sever;
 say 't10k data loaded';
 
 my $nerl = AI::Nerl->new(
    # type => image,dims=>[28,28],...
    scale_input => 256,
-   train_data => $images(0:79),
-   train_labels => $labels(0:79),
-   test_data => $images(8000:8999),
-   test_labels => $labels(8000:8999),
-   cv_data => $images(9000:9999),
-   cv_labels => $labels(9000:9999),
+   train_x => $images(0:999),
+   train_y => $y(0:999),
+   test_x => $images(8000:8999),
+   test_y => $y(8000:8999),
+   cv_x => $images(9000:9999),
+   cv_y => $y(9000:9999),
 );
 
 my $net = $nerl->build_network();#method=batch,hidden=>12345,etc 

@@ -15,10 +15,11 @@ has scale_input => (
    is => 'ro',
    isa => 'Num',
    required => 0,
+   default => 0,
 );
 
-has [qw/ test_data   train_data   cv_data
-         test_labels train_labels cv_labels /] => (
+has [qw/ test_x train_x cv_x
+         test_y train_y cv_y /] => (
    is => 'ro',
    isa => 'PDL',
 );
@@ -32,12 +33,12 @@ has network => (
 sub build_network{
    my $self = shift;
    my $nn = AI::Nerl::Network->new(
-      l1 => $self->train_data->dim(1),
+      l1 => $self->train_x->dim(1),
       l2 => 30,
-      l3 => 10,#$self->train_labels->uniq->dim(0),
+      l3 => $self->train_y->dim(1),
       scale_input => $self->scale_input,
    );
-   $nn->train($self->train_data,$self->train_labels);
+   $nn->train($self->train_x, $self->train_y);
    $self->network($nn);
 }
 
