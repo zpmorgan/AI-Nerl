@@ -17,11 +17,22 @@ has scale_input => (
    required => 0,
    default => 0,
 );
+has l2 => ( #hidden layer.
+   is => 'ro',
+   isa => 'Num',
+   default => 30,
+);
 
-has [qw/ test_x train_x cv_x
-         test_y train_y cv_y /] => (
+has [qw/ train_x 
+         train_y /] => (
    is => 'ro',
    isa => 'PDL',
+);
+has [qw/ test_x cv_x
+         test_y cv_y /] => (
+   is => 'ro',
+   isa => 'PDL',
+   required => 0,
 );
 
 has network => (
@@ -34,7 +45,7 @@ sub build_network{
    my $self = shift;
    my $nn = AI::Nerl::Network->new(
       l1 => $self->train_x->dim(1),
-      l2 => 30,
+      l2 => $self->l2,
       l3 => $self->train_y->dim(1),
       scale_input => $self->scale_input,
    );

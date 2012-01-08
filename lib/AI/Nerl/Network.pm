@@ -34,35 +34,38 @@ has theta2 => (
 has alpha => ( #learning rate
    isa => 'Num',
    is => 'rw',
-   default => .36,
+   default => .3,
 );
 has lambda => (
    isa => 'Num',
    is => 'rw',
-   default => .30,
+   default => .01,
 );
 
 sub _mk_theta1{
    my $self = shift;
-   return grandom($self->l1, $self->l2) * .001;
+   return grandom($self->l1, $self->l2) * .1;
 }
 sub _mk_theta2{
    my $self = shift;
-   return grandom($self->l2, $self->l3) * .001;
+   return grandom($self->l2, $self->l3) * .1;
 }
 
-   my ($labels,$delta,$out_neurons, $img,$id,$images,$pass);
 
 sub train{
-   my ($self,$x,$y) = @_;
+   my ($self,$x,$y, %params) = @_;
+   my $passes = $params{passes} // 10;
+
    if ($self->scale_input){
       $x *= $self->scale_input;
    }
    my $num_examples = $x->dim(0);
-   for my $pass (1..9){
-      show784($self->theta1->slice(':,2'));
-      my $delta1 = $self->theta1 * 0;
-      my $delta2 = $self->theta2 * 0; 
+
+   for my $pass (1..$passes){
+#      warn 'blah:'. $self->theta1->slice(':,2')->flat->sum;
+#      show784($self->theta1->slice(':,2'));
+      my $delta1 = $self->theta1->copy * 0;
+      my $delta2 = $self->theta2->copy * 0;
       #iterate over examples :(
       for my $i (0..$num_examples-1){
          my $a1 = $x(($i));
@@ -70,30 +73,37 @@ sub train{
          my $a2 = sigmoid($z2);
          my $z3 = ($self->theta2 x $a2->transpose)->squeeze;
          my $a3 = sigmoid($z3);
-         #my $label = $y(($i));
-         
-         my $d3= -($y(($i)) - $a3) * logistic($a3);# sigmoid($z3);#logistic..
+         # warn $y(($i)) - $a3;
+         my $d3= -($y(($i)) - $a3) * logistic($a3);
          $delta2 += $d3->transpose x $a2;
-
-         my $d2 = ($self->theta2->transpose x $d3->transpose)->squeeze * logistic($a2);#sigmoid($z2);
+         my $d2 = ($self->theta2->transpose x $d3->transpose)->squeeze * logistic($a2);
          $delta1 += $d2->transpose x $a1;
+         #warn $delta2(4);
+         if(0 and rand()<.01){
+            warn (($d3->transpose x $a2)->flat->sum);;
+            warn ($z3);
+            warn $d2->sum;
+            warn (($d2->transpose x $a1)->flat->sum);;
+         }
       }
+      warn $delta2;#/ $num_examples;
+      warn $delta1 ;
       $self->{theta2} -= $self->alpha * ($delta2 / $num_examples + $self->theta2 * $self->lambda);
       $self->{theta1} -= $self->alpha * ($delta1 / $num_examples + $self->theta1 * $self->lambda);
-      warn "theta1 wt total: ".$self->theta1->flat->sum;
+#      warn "theta1 wt total: ".$self->theta1->flat->sum;
       my ($cost,$numcorrect) = $self->cost($x,$y);
-      warn "cost: $cost. \nclassified correctly: $numcorrect";
+#      warn "cost: $cost. \nclassified correctly: $numcorrect";
       
    }
-   return;
-   $delta /= $images->dim(0);
-   $delta *= .2;
-   $out_neurons -= $delta;
-   if ($pass%200==0){
-      warn $delta(100:104);
-      warn $out_neurons(100:104);
-   }  
-   
+}
+
+sub run{
+   my ($self,$x) = @_;
+   my $y = $self->theta1 x $x;
+   $y = sigmoid($y);
+   $y = $self->theta2 x $y;
+   $y = sigmoid($y);
+   return $y;
 }
 
 sub cost{
@@ -112,7 +122,7 @@ sub cost{
       my $z3 = ($self->theta2 x $a2->transpose)->squeeze;
       my $a3 = sigmoid($z3);
       $total_cost += ($y(($n))-$a3)->abs()->power(2,0)->sum()/2;
-      warn $a3->maximum_ind . '    ' . $y(($i))->maximum_ind;;
+      #warn $a3->maximum_ind . '    ' . $y(($i))->maximum_ind;;
       $num_correct++ if $a3->maximum_ind == $y(($i))->maximum_ind;
    }
    $total_cost /= $n;
