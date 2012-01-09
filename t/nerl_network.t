@@ -30,7 +30,7 @@ use_ok('AI::Nerl::Network');
    is($XOR_nn->theta2->dim(0), 3, 'theta1 dim1 == 3');
    is($XOR_nn->theta2->dim(1), 1, 'theta1 dim2 == 1');
 
-   $AND_nn->train($x,$AND, passes=>111);
+   $AND_nn->train($x,$AND, passes=>311);
    my $AND_output = $AND_nn->run($x);
    diag($AND_output);
 
