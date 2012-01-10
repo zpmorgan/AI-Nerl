@@ -89,8 +89,9 @@ sub train{
    my $num_examples = $x->dim(0);
 
    for my $pass (1..$passes){
+      warn $pass;
 #      warn 'blah:'. $self->theta1->slice(':,2')->flat->sum;
-      show784($self->theta1->slice(':,2'));
+      show784($self->theta1->slice(':,2')) if $pass%30==29;
       my $delta1 = $self->theta1->copy * 0;
       my $delta2 = $self->theta2->copy * 0;
       my $deltab1 = $self->b1->copy * 0;
@@ -101,15 +102,15 @@ sub train{
          my $a1 = $x(($i));
          my $z2 = ($self->theta1 x $a1->transpose)->squeeze;
          $z2 += $self->b1; #add bias.
-         my $a2 = sigmoid($z2);
+         my $a2 = $z2->tanh;#tanhx($z2);
          my $z3 = ($self->theta2 x $a2->transpose)->squeeze;
          $z3 += $self->b2; #add bias.
-         my $a3 = sigmoid($z3);
+         my $a3 = $z3->tanh;#tanhx($z3);
          # warn $y(($i)) - $a3;
-         my $d3= -($y(($i)) - $a3) * logistic($a3);
+         my $d3= -($y(($i)) - $a3) * tanhxderivative($a3);
          #warn $d3;
          $delta2 += $d3->transpose x $a2;
-         my $d2 = ($self->theta2->transpose x $d3->transpose)->squeeze * logistic($a2);
+         my $d2 = ($self->theta2->transpose x $d3->transpose)->squeeze * tanhxderivative($a2);
          $delta1 += $d2->transpose x $a1;
          #warn $delta2(4);
          $deltab1 += $d2;
@@ -144,11 +145,11 @@ sub run{
    #warn $y;
    #warn $self->b1;
    $y += (ones(1,$x->dim(0)) x $self->b1)->transpose;
-   $y = sigmoid($y);
+   $y = tanhx($y);
    $y = $self->theta2 x $y;
    $y += $self->b2;
    warn $y;
-   $y = sigmoid($y);
+   $y = tanhx($y);
    return $y;
 }
 
@@ -164,9 +165,9 @@ sub cost{
    for my $i (1..$n-1){
       my $a1 = $x(($i));
       my $z2 = ($self->theta1 x $a1->transpose)->squeeze;
-      my $a2 = sigmoid($z2);
+      my $a2 = tanhx($z2);
       my $z3 = ($self->theta2 x $a2->transpose)->squeeze;
-      my $a3 = sigmoid($z3);
+      my $a3 = tanhx($z3);
       $total_cost += ($y(($n))-$a3)->abs()->power(2,0)->sum()/2;
       #warn $a3->maximum_ind . '    ' . $y(($i))->maximum_ind;;
       $num_correct++ if $a3->maximum_ind == $y(($i))->maximum_ind;
@@ -175,6 +176,17 @@ sub cost{
    $total_cost += $self->theta1->flat->power(2,0)->sum * $self->lambda;
    $total_cost += $self->theta2->flat->power(2,0)->sum * $self->lambda;
    return ($total_cost, $num_correct);
+}
+
+sub tanhx{
+   my $foo = shift;
+   my $p = E**$foo;
+   my $n = E**-$foo;
+   return (($p-$n)/($p+$n));
+}
+sub tanhxderivative{
+   my $tanhx = shift;
+   return (1 - $tanhx**2);
 }
 
 sub sigmoid{

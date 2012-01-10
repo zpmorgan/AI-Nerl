@@ -41,6 +41,12 @@ has network => (
    isa => 'AI::Nerl::Network',
 );
 
+has passes=> (
+   is => 'rw',
+   isa => 'Int',
+   default => 10,
+);
+
 sub build_network{
    my $self = shift;
    my $nn = AI::Nerl::Network->new(
@@ -49,7 +55,7 @@ sub build_network{
       l3 => $self->train_y->dim(1),
       scale_input => $self->scale_input,
    );
-   $nn->train($self->train_x, $self->train_y);
+   $nn->train($self->train_x, $self->train_y, passes=>$self->passes);
    $self->network($nn);
 }
 

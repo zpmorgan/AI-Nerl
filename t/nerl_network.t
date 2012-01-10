@@ -22,16 +22,18 @@ use_ok('AI::Nerl::Network');
       b2=>pdl(0),
       alpha=>100,
    );
-   for(1..99){
-      die $nn->run($x);
+      $nn->train($x,$y,passes=>1);
+   for(1..0){
+      #   die $nn->run($x);
+      #diag($nn->run($x));
+      $nn->train($x,$y,passes=>1);
+      #   my $b1 = $nn->b2;
    diag($nn->run($x));
-      $nn->train($x,$y,passes=>3);
-      my $b1 = $nn->b2;
-   diag($nn->run($x));
-      die $b1 . 'foo';
-      $b1->slice(0) .= 0;
+   #die $b1 . 'foo';
+   # $b1->slice(0) .= 0;
    }
    diag($nn->run($x));
+   die;
 }
 
 #build a few really simple nets.
