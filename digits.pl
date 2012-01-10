@@ -22,17 +22,22 @@ my $nerl = AI::Nerl->new(
    test_y => $y(8000:8999),
    cv_x => $images(9000:9999),
    cv_y => $y(9000:9999),
-   passes=>30,
+   passes=>3,
+   l2 => 200,
 );
 
 my $net = $nerl->build_network();#method=batch,hidden=>12345,etc
 
-for($1..100){
+for(1..10000){
    my $n = int rand(9000);
    my $m = $n+99;
    my $ix = $images->slice("$n:$m");
    my $iy = $y->slice("$n:$m");
-   $nerl->network->train($ix,$iy,passes=>31);
+   $nerl->network->train($ix,$iy,passes=>1);
+   warn $nerl->network->b2;
+   my ($cost,$nc) =  $nerl->network->cost($images(9400:9499),$y(9400:9499));
+   print "cost:$cost\n,num correct: $nc\n";
+   $nerl->network->show_neuron(0) if $_%70==19;
 }
 
 __END__

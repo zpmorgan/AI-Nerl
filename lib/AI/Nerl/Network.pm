@@ -58,7 +58,7 @@ has alpha => ( #learning rate
 has lambda => (
    isa => 'Num',
    is => 'rw',
-   default => .0,
+   default => .1,
 );
 
 sub _mk_theta1{
@@ -89,9 +89,8 @@ sub train{
    my $num_examples = $x->dim(0);
 
    for my $pass (1..$passes){
-      warn $pass;
 #      warn 'blah:'. $self->theta1->slice(':,2')->flat->sum;
-      show784($self->theta1->slice(':,2')) if $pass%30==29;
+      show784($self->theta1->slice(':,0')) if $pass%30==29 and $DEBUG;
       my $delta1 = $self->theta1->copy * 0;
       my $delta2 = $self->theta2->copy * 0;
       my $deltab1 = $self->b1->copy * 0;
@@ -102,10 +101,10 @@ sub train{
          my $a1 = $x(($i));
          my $z2 = ($self->theta1 x $a1->transpose)->squeeze;
          $z2 += $self->b1; #add bias.
-         my $a2 = $z2->tanh;#tanhx($z2);
+         my $a2 = $z2->tanh;
          my $z3 = ($self->theta2 x $a2->transpose)->squeeze;
          $z3 += $self->b2; #add bias.
-         my $a3 = $z3->tanh;#tanhx($z3);
+         my $a3 = $z3->tanh;
          # warn $y(($i)) - $a3;
          my $d3= -($y(($i)) - $a3) * tanhxderivative($a3);
          #warn $d3;
@@ -132,10 +131,6 @@ sub train{
       $self->{theta1} -= $self->alpha * ($delta1 / $num_examples + $self->theta1 * $self->lambda);
       $self->{b1} -= $self->alpha * $deltab1 / $num_examples;
       $self->{b2} -= $self->alpha * $deltab2 / $num_examples;
-#      warn "theta1 wt total: ".$self->theta1->flat->sum;
-#      my ($cost,$numcorrect) = $self->cost($x,$y);
-#      warn "cost: $cost. \nclassified correctly: $numcorrect";
-      
    }
 }
 
@@ -145,30 +140,30 @@ sub run{
    #warn $y;
    #warn $self->b1;
    $y += (ones(1,$x->dim(0)) x $self->b1)->transpose;
-   $y = tanhx($y);
+   $y->inplace()->tanh;# = tanhx($y);
    $y = $self->theta2 x $y;
    $y += $self->b2;
    warn $y;
-   $y = tanhx($y);
+   $y->inplace->tanh();# = tanhx($y);
    return $y;
 }
 
 sub cost{
    my ($self,$x,$y) = @_;
-   my $n = $x->dim(1);
+   my $n = $x->dim(0);
    if ($self->scale_input){
       $x *= $self->scale_input;
    }
    my $num_correct = 0;
-
+   #die join(',',$x->dims) .',,,'. join(',',$y->dims);
    my $total_cost = 0; 
    for my $i (1..$n-1){
       my $a1 = $x(($i));
       my $z2 = ($self->theta1 x $a1->transpose)->squeeze;
-      my $a2 = tanhx($z2);
+      my $a2 = $z2->tanh();
       my $z3 = ($self->theta2 x $a2->transpose)->squeeze;
-      my $a3 = tanhx($z3);
-      $total_cost += ($y(($n))-$a3)->abs()->power(2,0)->sum()/2;
+      my $a3 = $z3->tanh;
+      $total_cost += ($y(($i))-$a3)->abs()->power(2,0)->sum()/2;
       #warn $a3->maximum_ind . '    ' . $y(($i))->maximum_ind;;
       $num_correct++ if $a3->maximum_ind == $y(($i))->maximum_ind;
    }
@@ -178,13 +173,13 @@ sub cost{
    return ($total_cost, $num_correct);
 }
 
-sub tanhx{
+sub tanhx{ #don't use this. pdl has $pdl->tanh which can be used in place.
    my $foo = shift;
    my $p = E**$foo;
    my $n = E**-$foo;
    return (($p-$n)/($p+$n));
 }
-sub tanhxderivative{
+sub tanhxderivative{ #use: tanhxderivative($pdl->tanh()). save time by finding tanh first.
    my $tanhx = shift;
    return (1 - $tanhx**2);
 }
@@ -202,10 +197,11 @@ sub logistic{
 }
 
 use PDL::Graphics2D;
+#display 28x28 grayscale pdl.
 sub show784{
    my $w = shift;
    $w = $w->copy;
-   warn join',', $w->dims;
+   #warn join',', $w->dims;
    $w = $w->squeeze;
    my $min = $w->minimum;
    $w -= $min;
@@ -215,6 +211,20 @@ sub show784{
    imag2d $w;
 }
 
+sub show_neuron{
+   my $self = shift;
+   my $n = shift // 0;
+   my $x = shift || 28;
+   my $y = shift || 28;
+   my $w = $self->theta1->slice(":,$n")->copy;
+   $w = $w->squeeze;
+   my $min = $w->minimum;
+   $w -= $min;
+   my $max = $w->maximum;
+   $w /= $max;
+   $w = $w->reshape($x,$y);
+   imag2d $w;
+}
 
 '$nn->train($sovietRussian)';
 
