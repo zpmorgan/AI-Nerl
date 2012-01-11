@@ -32,21 +32,22 @@ my $nerl = AI::Nerl->new(
    test_y => $y(8000:8999),
    cv_x => $images(9000:9999),
    cv_y => $y(9000:9999),
-   passes=>3,
-   l2 => 20,
 );
 
-my $net = $nerl->build_network();#method=batch,hidden=>12345,etc
+$nerl->init_network(l2=>10);#method=batch,hidden=>12345,etc
 
-for(1..3){
-   my $n = 1000;#int rand(9000);
-   my $m = 1999;#$n+399;
+for(1..300){
+   my $n = int rand(8000);
+   my $m = $n+499;
    my $ix = $images->slice("$n:$m");
    my $iy = $y->slice("$n:$m");
-   $nerl->network->train($ix,$iy,passes=>20);
+   $nerl->network->train($ix,$iy,passes=>10);
    my ($cost,$nc) =  $nerl->network->cost($images(9000:9999),$y(9000:9999));
-   print "cost:$cost\n,num correct: $nc\n";
-   $nerl->network->show_neuron($_) for (0..19);
+   print "cost:$cost\n,num correct: $nc / 1000\n";
+   print "example output, images 0 to 4\n";
+   print "Labels: " . $y(0:4) . "\n";
+   print $nerl->network->run($images(0:4));
+   $nerl->network->show_neuron($_) for (0..4);
 }
 
 __END__

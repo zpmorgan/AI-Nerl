@@ -27,6 +27,7 @@ has [qw/ train_x
          train_y /] => (
    is => 'ro',
    isa => 'PDL',
+   required => 0, #training can be done manually.
 );
 has [qw/ test_x cv_x
          test_y cv_y /] => (
@@ -46,6 +47,22 @@ has passes=> (
    isa => 'Int',
    default => 10,
 );
+
+#initialize $self->network, but don't train.
+# any parameters AI::Nerl::Network takes are fine here.
+sub init_network{
+   my $self = shift;
+   my %nn_params = @_;
+   $nn_params{l1} ||= $self->train_x->dim(1);
+   $nn_params{l2} ||= $self->l2;
+   $nn_params{l3} ||= $self->train_y->dim(1),
+   $nn_params{scale_input} ||= $self->scale_input;
+
+   my $nn = AI::Nerl::Network->new(
+      %nn_params
+   );
+   $self->network($nn);
+}
 
 sub build_network{
    my $self = shift;
