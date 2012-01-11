@@ -34,11 +34,11 @@ my $nerl = AI::Nerl->new(
 #   cv_y => $y(9000:9999),
 );
 
-$nerl->init_network(l1 => 784, l3=>10, l2=>10);#method=batch,hidden=>12345,etc
+$nerl->init_network(l1 => 784, l3=>10, l2=>80,alpha=>.45);#method=batch,hidden=>12345,etc
 
 for(1..300){
    my $n = int rand(8000);
-   my $m = $n+499;
+   my $m = $n+999;
    my $ix = $images->slice("$n:$m");
    my $iy = $y->slice("$n:$m");
    $nerl->network->train($ix,$iy,passes=>10);
