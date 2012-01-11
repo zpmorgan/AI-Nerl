@@ -4,6 +4,8 @@ use PDL;
 use PDL::NiceSlice;
 use PDL::Constants 'E';
 
+# ABSTRACT: 3-layer Neural network on PDL with backpropagation
+#
 my $DEBUG=0;
 
 # http://ufldl.stanford.edu/wiki/index.php/Backpropagation_Algorithm

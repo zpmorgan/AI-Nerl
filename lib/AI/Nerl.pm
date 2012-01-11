@@ -3,6 +3,10 @@ use Moose 'has',inner => { -as => 'moose_inner' };
 use PDL;
 use AI::Nerl::Network;
 
+# ABSTRACT: Neural networks with backpropagation.
+
+# main_module
+
 our $VERSION = .01;
 
 #A Nerl is a mechanism to build neural networks?
