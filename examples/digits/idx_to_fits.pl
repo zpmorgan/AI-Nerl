@@ -6,6 +6,9 @@ use PDL::NiceSlice;
 use File::Slurp;
 use PDL::IO::FITS;
 
+use FindBin qw($Bin); 
+chdir $Bin;
+
 die 'filename' unless $ARGV[0];
 my $img_filename = $ARGV[0];
 my $img_data = read_file( $img_filename, binmode => ':raw' ) ;

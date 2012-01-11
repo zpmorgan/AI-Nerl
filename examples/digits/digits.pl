@@ -6,7 +6,17 @@ use PDL::NiceSlice;
 use PDL::IO::FITS;
 use PDL::Constants 'E';
 use lib 'lib';
+use lib '../../lib';
 use AI::Nerl;
+
+use FindBin qw($Bin); 
+chdir $Bin;
+
+unless (-e "t10k-labels-idx1-ubyte.fits"){ die <<"NODATA";}
+pull this data by running get_digits.sh
+convert it to FITS by running idx_to_fits.pl
+NODATA
+
 
 my $images = rfits('t10k-images-idx3-ubyte.fits');
 my $labels = rfits('t10k-labels-idx1-ubyte.fits');
