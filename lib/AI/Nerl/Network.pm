@@ -83,7 +83,7 @@ Zach Morgan C<< <zpmorgan@gmail.com> >>
 
 =head1 COPYRIGHT
 
-Copyright 2009 by Zach Morgan
+Copyright 2012 by Zach Morgan
 
 This package is free software; you can redistribute it and/or modify it under the 
 same terms as Perl itself.

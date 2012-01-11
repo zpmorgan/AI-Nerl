@@ -7,7 +7,7 @@ use AI::Nerl::Network;
 
 # main_module
 
-our $VERSION = .01;
+our $VERSION = .02;
 
 #A Nerl is a mechanism to build neural networks?
 #Give it training,test, and cv data?
