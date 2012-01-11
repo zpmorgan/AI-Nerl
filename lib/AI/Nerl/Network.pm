@@ -58,29 +58,30 @@ has alpha => ( #learning rate
 has lambda => (
    isa => 'Num',
    is => 'rw',
-   default => .1,
+   default => .01,
 );
 
 sub _mk_theta1{
    my $self = shift;
-   return grandom($self->l1, $self->l2) * .01;
+   return grandom($self->l1, $self->l2) * .001;
 }
 sub _mk_theta2{
    my $self = shift;
-   return grandom($self->l2, $self->l3) * .01;
+   return grandom($self->l2, $self->l3) * .001;
 }
 sub _mk_b1{
    my $self = shift;
-   return grandom($self->l2) * .01;
+   return grandom($self->l2) * .001;
 }
 sub _mk_b2{
    my $self = shift;
-   return grandom($self->l3) * .01;
+   return grandom($self->l3) * .001;
 }
 
 
 sub train{
    my ($self,$x,$y, %params) = @_;
+   $x->sever();
    my $passes = $params{passes} // 10;
 
    if ($self->scale_input){
@@ -136,20 +137,25 @@ sub train{
 
 sub run{
    my ($self,$x) = @_;
+   $x->sever();
+   if ($self->scale_input){
+      $x *= $self->scale_input;
+   }
+
+   $x = $x->transpose if $self->l1 != $x->dim(1);
    my $y = $self->theta1 x $x;
-   #warn $y;
-   #warn $self->b1;
-   $y += (ones(1,$x->dim(0)) x $self->b1)->transpose;
+   $y += $self->b1->transpose;
    $y->inplace()->tanh;# = tanhx($y);
+
    $y = $self->theta2 x $y;
-   $y += $self->b2;
-   warn $y;
-   $y->inplace->tanh();# = tanhx($y);
+   $y += $self->b2->transpose;
+   $y->inplace()->tanh();# = tanhx($y);
    return $y;
 }
 
 sub cost{
    my ($self,$x,$y) = @_;
+   $x->sever();# = $x->copy();
    my $n = $x->dim(0);
    if ($self->scale_input){
       $x *= $self->scale_input;
@@ -157,11 +163,13 @@ sub cost{
    my $num_correct = 0;
    #die join(',',$x->dims) .',,,'. join(',',$y->dims);
    my $total_cost = 0; 
-   for my $i (1..$n-1){
+   for my $i (0..$n-1){
       my $a1 = $x(($i));
       my $z2 = ($self->theta1 x $a1->transpose)->squeeze;
+      $z2 += $self->b1;
       my $a2 = $z2->tanh();
       my $z3 = ($self->theta2 x $a2->transpose)->squeeze;
+      $z3 += $self->b2;
       my $a3 = $z3->tanh;
       $total_cost += ($y(($i))-$a3)->abs()->power(2,0)->sum()/2;
       #warn $a3->maximum_ind . '    ' . $y(($i))->maximum_ind;;
