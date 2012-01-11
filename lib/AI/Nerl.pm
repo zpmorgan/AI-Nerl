@@ -3,6 +3,8 @@ use Moose 'has',inner => { -as => 'moose_inner' };
 use PDL;
 use AI::Nerl::Network;
 
+our $VERSION = .01;
+
 #A Nerl is a mechanism to build neural networks?
 #Give it training,test, and cv data?
 #it settles on a learning rate and stuff?
@@ -10,6 +12,21 @@ use AI::Nerl::Network;
 #or maybe a visual gui thing?
 #Not exactly sure. Maybe I'm tinkering with forces better left alone.
 #That's a great excuse for failing horribly.
+
+
+=head1 AI::Nerl - A sort of stackable neural network builder thing.
+
+=head1 SYNOPSIS
+
+Check out L<AI::Nerl::Network>; This module is in an early stage.
+
+=head1 AUTHOR
+
+Zach Morgan
+
+=cut
+
+
 
 has scale_input => (
    is => 'ro',

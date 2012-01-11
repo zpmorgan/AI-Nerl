@@ -10,8 +10,87 @@ my $DEBUG=0;
 # http://www.stanford.edu/class/cs294a/sparseAutoencoder_2011new.pdf
 
 
+=head1 NAME
+
+AI::Nerl::Network - 3-layer neural network with backpropagation
+
+=head1 SYNOPSIS
+
+ use AI::Nerl::Network;
+ use PDL;
+   
+ my $x = pdl([0,0,1,1],
+             [0,1,0,1],
+             [1,0,0,1]);
+ my $y = pdl([1,1,0,1]);
+ my $nn = AI::Nerl::Network->new(
+            l1 => 3,       # 3 inputs
+            l2 => 18,      # 18 hidden neurons
+            l3 => 1,       # 1 output
+            alpha => .3,   # learning rate
+            lambda => .01, # 'squashing' parameter
+ );
+ $nn->train($x,$y, passes=>45);
+ my ($cost,$num_correct) = $nn->cost($x,$y);
+ #$nn wasn't programmed with this input. could be anything:
+ print $nn->run(pdl([0,0,0])); 
+
+=head1 DESCRIPTION
+
+=head1 METHODS
+
+=head2 train($x,$y, %params)
+
+Train with backpropagation using $x as input & $y as target.
+$x and $y are both pdls. If there are multiple cases, each one will
+occupy a column (dimension 2) of the pdl. If your dimensions are off,
+you will experience an pdl error of some sort.
+
+=head3 %params
+
+=head4 passes
+
+number of passes.
+
+=head2 run($x)
+
+ $output = $nn->run($x);
+
+=head2 cost($x,$y)
+
+ ($cost,$num_correct) = $nn->cost($x,$y);
+
+Calculate the 'cost' of the network. This is basically the difference between the
+actual output ($nn->run($x)) and the the target output($y), added to the sum of
+the neural weights if you're penalizing weights with lambda. The cost should 
+B<Always> decrease after being trained with ($x,$y).
+
+This function returns both the cost, and the number of "correct" responses
+if using output neurons for classification.
+
+=head1 SEE ALSO
+
+L<http://en.wikipedia.org/wiki/Feedforward_neural_network#Multi-layer_perceptron>
+
+L<http://en.wikipedia.org/wiki/Backpropagation>
+
+=head1 AUTHOR
+
+Zach Morgan C<< <zpmorgan@gmail.com> >>
+
+
+=head1 COPYRIGHT
+
+Copyright 2009 by Zach Morgan
+
+This package is free software; you can redistribute it and/or modify it under the 
+same terms as Perl itself.
+
+=cut
+
 # Simple nn with 1 hidden layer
 # train with $nn->train(data,labels);
+
 has scale_input => (
    is => 'ro',
    required => 0,
