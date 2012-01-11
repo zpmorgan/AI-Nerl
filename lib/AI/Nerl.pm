@@ -48,14 +48,34 @@ has passes=> (
    default => 10,
 );
 
+has basis => (
+   is => 'ro',
+   isa => 'AI::Nerl',
+   required => 0,
+);
+
 #initialize $self->network, but don't train.
 # any parameters AI::Nerl::Network takes are fine here.
 sub init_network{
    my $self = shift;
    my %nn_params = @_;
-   $nn_params{l1} ||= $self->train_x->dim(1);
+   #input layer size:
+   unless ($nn_params{l1}){
+      if ($self->basis){
+         $nn_params{l1} = $self->basis->network->l1 + $self->basis->network->l2;
+      } elsif($self->train_x) {
+         $nn_params{l1} ||= $self->train_x->dim(1);
+      }
+   }
+   #output layer size:
+   unless ($nn_params{l3}){
+      if ($self->basis){
+         $nn_params{l3} =  $self->basis->network->l3;
+      } elsif($self->train_x) {
+         $nn_params{l3} ||= $self->train_y->dim(1);
+      }
+   }
    $nn_params{l2} ||= $self->l2;
-   $nn_params{l3} ||= $self->train_y->dim(1),
    $nn_params{scale_input} ||= $self->scale_input;
 
    my $nn = AI::Nerl::Network->new(
@@ -76,6 +96,39 @@ sub build_network{
    $self->network($nn);
 }
 
+sub append_l2{
+   my ($self,$x) = @_;
+   if($self->basis){
+      $x = $self->basis->append_l2($x);
+   }
+   return $self->network->append_l2($x);
+}
 
+
+sub run{
+   my ($self,$x) = @_;
+   $x->sever;
+   if($self->basis){
+      $x = $self->basis->append_l2($x);
+   }
+   return $self->network->run($x);
+}
+sub train{
+   my ($self,$x,$y) = @_;
+   $x->sever;
+   if($self->basis){
+      $x = $self->basis->append_l2($x);
+   }
+   return $self->network->train($x,$y);
+}
+
+sub cost{
+   my ($self,$x,$y) = @_;
+   $x->sever();
+   if($self->basis){
+      $x = $self->basis->append_l2($x);
+   }
+   return $self->network->cost($x,$y);
+}
 
 'a neural network has your dog.';

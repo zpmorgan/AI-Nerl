@@ -53,7 +53,7 @@ has b2 => (
 has alpha => ( #learning rate
    isa => 'Num',
    is => 'rw',
-   default => .3,
+   default => .6,
 );
 has lambda => (
    isa => 'Num',
@@ -63,19 +63,19 @@ has lambda => (
 
 sub _mk_theta1{
    my $self = shift;
-   return grandom($self->l1, $self->l2) * .001;
+   return grandom($self->l1, $self->l2) * .01;
 }
 sub _mk_theta2{
    my $self = shift;
-   return grandom($self->l2, $self->l3) * .001;
+   return grandom($self->l2, $self->l3) * .01;
 }
 sub _mk_b1{
    my $self = shift;
-   return grandom($self->l2) * .001;
+   return grandom($self->l2) * .01;
 }
 sub _mk_b2{
    my $self = shift;
-   return grandom($self->l3) * .001;
+   return grandom($self->l3) * .01;
 }
 
 
@@ -151,6 +151,21 @@ sub run{
    $y += $self->b2->transpose;
    $y->inplace()->tanh();# = tanhx($y);
    return $y;
+}
+
+sub append_l2{
+   my ($self,$x) = @_;
+   $x->sever();
+   if ($self->scale_input){
+      $x *= $self->scale_input;
+   }
+   $x = $x->transpose if $self->l1 != $x->dim(1);
+   my $l2 = $self->theta1 x $x;
+   $l2 += $self->b1->transpose;
+   $l2->inplace()->tanh;
+#   warn join ',',$x->dims;
+#   warn join ',',$l2->dims;
+   return $x->glue(1,$l2);
 }
 
 sub cost{

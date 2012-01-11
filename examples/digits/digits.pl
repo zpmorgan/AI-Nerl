@@ -26,15 +26,15 @@ say 't10k data loaded';
 my $nerl = AI::Nerl->new(
    # type => image,dims=>[28,28],...
    scale_input => 1/256,
-   train_x => $images(0:99),
-   train_y => $y(0:99),
-   test_x => $images(8000:8999),
-   test_y => $y(8000:8999),
-   cv_x => $images(9000:9999),
-   cv_y => $y(9000:9999),
+#   train_x => $images(0:99),
+#   train_y => $y(0:99),
+#   test_x => $images(8000:8999),
+#   test_y => $y(8000:8999),
+#   cv_x => $images(9000:9999),
+#   cv_y => $y(9000:9999),
 );
 
-$nerl->init_network(l2=>10);#method=batch,hidden=>12345,etc
+$nerl->init_network(l1 => 784, l3=>10, l2=>10);#method=batch,hidden=>12345,etc
 
 for(1..300){
    my $n = int rand(8000);
