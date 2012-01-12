@@ -300,9 +300,25 @@ sub logistic{
    return $foo * (1-$foo);
 }
 
-use PDL::Graphics2D;
+my $g2d_tried = 0;
+my $g2d_failed = '';
+sub USE_G2D{
+   return 0 if $g2d_tried and $g2d_failed;
+   return 1 if $g2d_tried;
+   eval{
+      require PDL::Graphics2D;
+      PDL::Graphics2d->import('imag2d');
+      1;
+   } or do {
+      $g2d_failed = $@;
+      warn "PDL::Graphics2d failed to load. perhaps $g2d_failed";
+   };
+   $g2d_tried = 1;
+   return USE_G2D();
+}
 #display 28x28 grayscale pdl.
 sub show784{
+   return unless USE_G2D();
    my $w = shift;
    $w = $w->copy;
    #warn join',', $w->dims;
@@ -316,6 +332,10 @@ sub show784{
 }
 
 sub show_neuron{
+   unless (USE_G2D()){
+      warn 'Can\'t display neuron. Get OpenGL?';
+      return;
+   }
    my $self = shift;
    my $n = shift // 0;
    my $x = shift || 28;
@@ -327,7 +347,7 @@ sub show_neuron{
    my $max = $w->maximum;
    $w /= $max;
    $w = $w->reshape($x,$y);
-   imag2d $w;
+   PDL::Graphics2D::imag2d $w;
 }
 
 '$nn->train($sovietRussian)';

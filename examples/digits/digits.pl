@@ -21,6 +21,8 @@ NODATA
 my $images = rfits('t10k-images-idx3-ubyte.fits');
 my $labels = rfits('t10k-labels-idx1-ubyte.fits');
 my $y = identity(10)->range($labels->transpose)->sever;
+$y *= 2;
+$y -= 1;
 say 't10k data loaded';
 
 my $nerl = AI::Nerl->new(
@@ -41,7 +43,7 @@ for(1..300){
    my $m = $n+999;
    my $ix = $images->slice("$n:$m");
    my $iy = $y->slice("$n:$m");
-   $nerl->network->train($ix,$iy,passes=>10);
+   $nerl->network->train($ix,$iy,passes=>5);
    my ($cost,$nc) =  $nerl->network->cost($images(9000:9999),$y(9000:9999));
    print "cost:$cost\n,num correct: $nc / 1000\n";
    print "example output, images 0 to 4\n";
