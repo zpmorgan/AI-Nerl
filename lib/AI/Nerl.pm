@@ -38,6 +38,10 @@ has scale_input => (
    required => 0,
    default => 0,
 );
+has [qw/inputs outputs/] => (
+   is => 'ro',
+   isa => 'Num'
+);
 has l2 => ( #hidden layer.
    is => 'ro',
    isa => 'Num',
@@ -63,11 +67,6 @@ has network => (
    isa => 'AI::Nerl::Network',
 );
 
-has passes=> (
-   is => 'rw',
-   isa => 'Int',
-   default => 10,
-);
 
 has basis => (
    is => 'ro',
@@ -105,15 +104,21 @@ sub init_network{
    $self->network($nn);
 }
 
+sub init{
+   my $self = shift;
+   $self->build_network();
+}
+
 sub build_network{
    my $self = shift;
+   my $l1 = $self->inputs // $self->test_x->dim(1);
+   my $l3 = $self->outputs // $self->test_y->dim(1);
    my $nn = AI::Nerl::Network->new(
-      l1 => $self->train_x->dim(1),
+      l1 => $l1,
       l2 => $self->l2,
-      l3 => $self->train_y->dim(1),
+      l3 => $l3,
       scale_input => $self->scale_input,
    );
-   $nn->train($self->train_x, $self->train_y, passes=>$self->passes);
    $self->network($nn);
 }
 
