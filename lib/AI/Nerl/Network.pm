@@ -3,6 +3,9 @@ use Moose 'has', inner => { -as => 'moose_inner' };
 use PDL;
 use PDL::NiceSlice;
 use PDL::Constants 'E';
+use File::Path;
+use JSON;
+use File::Slurp;
 
 # ABSTRACT: 3-layer Neural network on PDL with backpropagation
 #
@@ -348,6 +351,49 @@ sub show_neuron{
    $w /= $max;
    $w = $w->reshape($x,$y);
    PDL::Graphics2D::imag2d $w;
+}
+
+
+#as with nerls, nerl::networks occupu a directory;
+#nn dir is within nerl dir.
+my @nnattribs = qw/scale_input theta1 theta2 l1 l2 l3 lambda alpha b1 b2/;
+
+sub save{
+   my ($self,$dir) = @_;
+   rmtree $dir if -d $dir; #there is nothing safer than rmtree.
+   mkdir $dir;
+   my $to_json = {};
+   for my $a (@nnattribs){
+      next unless defined $self->$a;
+      $to_json->{$a} = $self->$a;
+      if(ref $to_json->{$a} eq 'PDL'){
+         my $afile = "$a.fits";
+         #switcharoo with file name
+         #to store piddles in their own files.
+         $to_json->{$a}->wfits("$dir/$afile");
+         $to_json->{$a} = $afile;
+      }
+   }
+   my $encoded_nn = to_json ($to_json);
+   write_file("$dir/attribs", $encoded_nn);
+}
+
+sub load{
+   my $dir = shift;
+   $dir = shift if $dir eq 'AI::Nerl::Network';
+   die 'symptom nerl::network->load(lack of dir?)' unless $dir;
+   my $from_json = from_json(read_file("$dir/attribs"));
+   my %to_nn;
+   for my $a (@nnattribs){
+      my $value = $from_json->{$a};
+      next unless defined $value;
+      $to_nn{$a} = $value;
+      if ($value =~ /\.fits$/){
+         my $piddle = rfits($a);
+         $to_nn{$a} = $piddle;
+      }
+   }
+   my $nn = AI::Nerl::Network->new(%to_nn);
 }
 
 '$nn->train($sovietRussian)';

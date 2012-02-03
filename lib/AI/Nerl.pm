@@ -2,6 +2,8 @@ package AI::Nerl;
 use Moose 'has',inner => { -as => 'moose_inner' };
 use PDL;
 use AI::Nerl::Network;
+use File::Slurp;
+use JSON;
 
 # ABSTRACT: Neural networks with backpropagation.
 
@@ -156,5 +158,46 @@ sub cost{
    }
    return $self->network->cost($x,$y);
 }
+
+# A nerl occupied a directory.
+# its parameters occupy a .json file.
+# its piddles occupy .fits files.
+# Its network(s) occupy subdirectories,
+#  in which network piddles occupy .fits files
+#  and network params occupy another .json file.
+
+use PDL::IO::FITS;
+use File::Path;
+
+sub save{
+   my ($self,$dir) = @_;
+   my $top_json = {};
+   my @props = qw/l2 test_x test_y inputs outputs train_x train_y cv_x cv_y scale_input
+                   network  basis/;
+   die 'ugh. i dont like that nerl dir name' if $dir =~ /data|nerls$|\.|lib/;
+   rmtree $dir if -d $dir;
+   mkdir $dir;
+   for my $p (@props){
+      next unless defined $self->$p;
+      $top_json->{$p} = $self->$p;
+      if (ref $top_json->{$p} eq 'PDL'){
+         my $pfile = "$p.fits";
+         #switcharoo with file name
+         $top_json->{$p}->wfits("$dir/$pfile");
+         $top_json->{$p} = $pfile;
+      }
+      elsif (ref $top_json->{$p} eq 'AI::Nerl::Network'){
+         my $nn = $self->$p;
+         my $nndir = "$dir/$p";
+         $top_json->{$p} = "|AINN|$nndir";
+         $nn->save($nndir);
+      }
+   }
+   my $encoded_nerl = to_json($top_json);
+   write_file("$dir/attribs", $encoded_nerl);
+}
+
+
+
 
 'a neural network has your dog.';
