@@ -52,13 +52,13 @@ has l2 => ( #hidden layer.
 
 has [qw/ train_x 
          train_y /] => (
-   is => 'ro',
+   is => 'rw',
    isa => 'PDL',
    required => 0, #training can be done manually.
 );
 has [qw/ test_x cv_x
          test_y cv_y /] => (
-   is => 'ro',
+   is => 'rw',
    isa => 'PDL',
    required => 0,
 );
