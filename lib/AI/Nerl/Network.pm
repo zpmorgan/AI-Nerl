@@ -137,7 +137,7 @@ has b2 => (
 has alpha => ( #learning rate
    isa => 'Num',
    is => 'rw',
-   default => .6,
+   default => .3,
 );
 has lambda => (
    isa => 'Num',
@@ -259,8 +259,11 @@ sub cost{
    if ($self->scale_input){
       $x *= $self->scale_input;
    }
+
+   #sparse output? ==only one '1' in output vec.
+   my $sparse_output = ($n == ($y>0)->sum);
+
    my $num_correct = 0;
-   #die join(',',$x->dims) .',,,'. join(',',$y->dims);
    my $total_cost = 0; 
    for my $i (0..$n-1){
       my $a1 = $x(($i));
@@ -272,7 +275,14 @@ sub cost{
       my $a3 = $z3->tanh;
       $total_cost += ($y(($i))-$a3)->abs()->power(2,0)->sum()/2;
       #warn $a3->maximum_ind . '    ' . $y(($i))->maximum_ind;;
-      $num_correct++ if $a3->maximum_ind == $y(($i))->maximum_ind;
+      if ($sparse_output){
+         $num_correct++ if $a3->maximum_ind == $y(($i))->maximum_ind;
+      }
+      else { #not sparse. encoded binary number or somesuch.
+         my $diff = abs(($a3>0) - ($y(($i))>0));
+         $num_correct++ if max($diff)==0;
+         #warn $num_correct .' '. $y(($i));;
+      }
    }
    $total_cost /= $n;
    $total_cost += $self->theta1->flat->power(2,0)->sum * $self->lambda;
@@ -345,11 +355,16 @@ sub show_neuron{
    my $y = shift || 28;
    my $w = $self->theta1->slice(":,$n")->copy;
    $w = $w->squeeze;
+
+   #normalize
    my $min = $w->minimum;
    $w -= $min;
    my $max = $w->maximum;
    $w /= $max;
-   $w = $w->reshape($x,$y);
+   #detect whether color dim should exist.
+   my @dims = ($x,$y);
+   unshift(@dims,3) if 3*$x*$y == $w->dim(0);
+   $w = $w->reshape(@dims);
    PDL::Graphics2D::imag2d $w;
 }
 
@@ -389,7 +404,7 @@ sub load{
       next unless defined $value;
       $to_nn{$a} = $value;
       if ($value =~ /\.fits$/){
-         my $piddle = rfits($a);
+         my $piddle = rfits("$dir/$value");
          $to_nn{$a} = $piddle;
       }
    }

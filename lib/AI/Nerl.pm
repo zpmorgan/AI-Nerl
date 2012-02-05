@@ -152,6 +152,10 @@ sub train{
 
 sub cost{
    my ($self,$x,$y) = @_;
+   unless ($x and $y){
+      $x = $self->test_x->copy();
+      $y = $self->test_y->copy();
+   }
    $x->sever();
    if($self->basis){
       $x = $self->basis->append_l2($x);
@@ -169,11 +173,12 @@ sub cost{
 use PDL::IO::FITS;
 use File::Path;
 
+my @props = qw/l2 test_x test_y inputs outputs train_x train_y cv_x cv_y scale_input
+                   network  basis/;
+
 sub save{
    my ($self,$dir) = @_;
    my $top_json = {};
-   my @props = qw/l2 test_x test_y inputs outputs train_x train_y cv_x cv_y scale_input
-                   network  basis/;
    die 'ugh. i dont like that nerl dir name' if $dir =~ /data|nerls$|\.|lib/;
    rmtree $dir if -d $dir;
    mkdir $dir;
@@ -197,7 +202,27 @@ sub save{
    write_file("$dir/attribs", $encoded_nerl);
 }
 
-
-
+sub load{
+   my $dir = shift;
+   $dir = shift if $dir eq 'AI::Nerl';
+   die 'symptom ai::nerl->load(lack of dir?)' unless $dir;
+   my $from_json = from_json(read_file("$dir/attribs"));
+   my %to_nerl;
+   for my $a (@props){
+      my $value = $from_json->{$a};
+      next unless defined $value;
+      $to_nerl{$a} = $value;
+      #special cases: ai::nerl::networks and piddles
+      if ($value =~ /\.fits$/){
+         my $piddle = rfits("$dir/$value");
+         $to_nerl{$a} = $piddle;
+      }
+      elsif ($value =~ /^\|AINN\|(.*)$/){ #load a AI::N::network
+         my $nn = AI::Nerl::Network->load($1);
+         $to_nerl{$a} = $nn;
+      }
+   }
+   my $nn = AI::Nerl->new(%to_nerl);
+}
 
 'a neural network has your dog.';
