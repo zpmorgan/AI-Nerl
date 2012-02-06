@@ -267,7 +267,7 @@ sub _normalized_theta1{
 
    for my $i (0..$theta1->dim(0)-1){
       my $square = $theta1->slice($i);
-      $square .= Desulfurize->normalize($square);
+      $square .= _normalize($square);
    }
    $self->_nt1($theta1->transpose);
    return $theta1->transpose;
@@ -283,14 +283,15 @@ sub _normalized_theta1{
    $tranny *= ($avg_max - $avg_min);
 }
 
-# linear transformation, where minimum becomes 0 and maximum becomes 1
+# linear transformation, where minimum becomes -1 and maximum becomes 1
 sub _normalize{
    my $data = shift;
    $data = $data->copy;
    my $min  = $data->min;
    $data -= $min;
    my $max = $data->max;
-   $data /= $max unless $max ==0;
+   $data /= $max/2 unless $max ==0;
+   $data -= 1;
    return $data;
 }
 
