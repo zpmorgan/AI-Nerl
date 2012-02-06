@@ -252,6 +252,63 @@ sub append_l2{
    return $x->glue(1,$l2);
 }
 
+# this will break if used before & after training.
+has _nt1=> (
+   is => 'rw',
+   isa => 'PDL',
+);
+
+sub _normalized_theta1{
+   my $self = shift;
+   return $self->_nt1 if $self->_nt1;
+
+   my $theta1 = $self->theta1->copy;
+   $theta1 = $theta1->transpose;
+
+   for my $i (0..$theta1->dim(0)-1){
+      my $square = $theta1->slice($i);
+      $square .= Desulfurize->normalize($square);
+   }
+   $self->_nt1($theta1->transpose);
+   return $theta1->transpose;
+   
+   my $tranny = $theta1->transpose;
+
+   my $mins = $theta1->minimum;
+   my $maxes = $theta1->maximum;
+   my $avg_min = $mins->avg;
+   my $avg_max = $maxes->avg;
+
+   $tranny /= ($maxes-$mins);
+   $tranny *= ($avg_max - $avg_min);
+}
+
+# linear transformation, where minimum becomes 0 and maximum becomes 1
+sub _normalize{
+   my $data = shift;
+   $data = $data->copy;
+   my $min  = $data->min;
+   $data -= $min;
+   my $max = $data->max;
+   $data /= $max unless $max ==0;
+   return $data;
+}
+
+
+sub get_normalized_l2{
+   my ($self,$x) = @_;
+   $x = $x->flat->sever();
+   if ($self->scale_input){
+      $x *= $self->scale_input;
+   }
+   $x = $x->transpose if $self->l1 != $x->dim(1);
+   my $l2 = $self->_normalized_theta1 x $x;
+#   $l2 += $self->b1->transpose;
+#   $l2->inplace()->tanh;
+   #die $l2;
+   return $l2 / $x->flat->dim(0);
+}
+
 sub cost{
    my ($self,$x,$y) = @_;
    $x->sever();# = $x->copy();
