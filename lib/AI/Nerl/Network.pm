@@ -260,14 +260,14 @@ has _nt1=> (
 
 sub _normalized_theta1{
    my $self = shift;
-   return $self->_nt1 if $self->_nt1;
+   return $self->_nt1 if defined $self->_nt1;
 
    my $theta1 = $self->theta1->copy;
    $theta1 = $theta1->transpose;
 
    for my $i (0..$theta1->dim(0)-1){
       my $square = $theta1->slice($i);
-      $square .= _normalize($square);
+      $square .= _normalize_avg_to_zero($square);
    }
    $self->_nt1($theta1->transpose);
    return $theta1->transpose;
@@ -284,7 +284,7 @@ sub _normalized_theta1{
 }
 
 # linear transformation, where minimum becomes -1 and maximum becomes 1
-sub _normalize{
+sub _normalize_avg_to_zero{
    my $data = shift;
    $data = $data->copy;
    my $min  = $data->min;
@@ -292,6 +292,7 @@ sub _normalize{
    my $max = $data->max;
    $data /= $max/2 unless $max ==0;
    $data -= 1;
+   $data -= $data->avg();
    return $data;
 }
 
