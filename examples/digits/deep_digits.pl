@@ -4,7 +4,7 @@ use Modern::Perl;
 use PDL;
 use PDL::NiceSlice;
 use PDL::IO::FITS;
-use PDL::Constants 'E';
+use constant E     => exp(1);
 use lib 'lib';
 use lib '../../lib';
 use AI::Nerl;

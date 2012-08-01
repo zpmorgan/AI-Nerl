@@ -179,7 +179,7 @@ my @props = qw/l2 test_x test_y inputs outputs train_x train_y cv_x cv_y scale_i
 sub save{
    my ($self,$dir) = @_;
    my $top_json = {};
-   die 'ugh. i dont like that nerl dir name' if $dir =~ /data|nerls$|\.|lib/;
+   #die 'ugh. i dont like that nerl dir name' if $dir =~ /data|nerls$|\.|lib/;
    rmtree $dir if -d $dir;
    mkdir $dir;
    for my $p (@props){
@@ -222,7 +222,8 @@ sub load{
          $to_nerl{$a} = $nn;
       }
    }
-   my $nn = AI::Nerl->new(%to_nerl);
+   my $self = AI::Nerl->new(%to_nerl);
+   return $self;
 }
 
 'a neural network has your dog.';

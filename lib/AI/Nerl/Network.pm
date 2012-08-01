@@ -2,10 +2,12 @@ package AI::Nerl::Network;
 use Moose 'has', inner => { -as => 'moose_inner' };
 use PDL;
 use PDL::NiceSlice;
-use PDL::Constants 'E';
+#use PDL::Constants 'E';
 use File::Path;
 use JSON;
 use File::Slurp;
+
+use constant E => exp(1);
 
 # ABSTRACT: 3-layer Neural network on PDL with backpropagation
 #
@@ -296,7 +298,7 @@ sub _normalize_avg_to_zero{
    return $data;
 }
 
-
+#what?
 sub get_normalized_l2{
    my ($self,$x) = @_;
    $x = $x->flat->sever();
