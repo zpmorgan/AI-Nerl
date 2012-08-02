@@ -45,7 +45,7 @@ has [qw/inputs outputs/] => (
    isa => 'Num'
 );
 has l2 => ( #hidden layer.
-   is => 'ro',
+   is => 'rw',
    isa => 'Num',
    default => 30,
 );
@@ -104,6 +104,13 @@ sub init_network{
       %nn_params
    );
    $self->network($nn);
+}
+
+sub resize_l2{
+   my $self = shift;
+   my $new_l2 = shift;
+   $self->l2($new_l2);
+   $self->network->resize_l2($new_l2);
 }
 
 sub init{

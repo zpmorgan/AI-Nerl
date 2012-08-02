@@ -106,32 +106,33 @@ has scale_input => (
 );
 
 # number of input,hidden,output neurons
+# careful about resizing.
 has [qw/ l1 l2 l3 /] => (
-   is => 'ro',
+   is => 'rw',
    isa => 'Int',
 );
 
 has theta1 => (
-   is => 'ro',
+   is => 'rw',
    isa => 'PDL',
    lazy => 1,
    builder => '_mk_theta1',
 );
 has theta2 => (
-   is => 'ro',
+   is => 'rw',
    isa => 'PDL',
    lazy => 1,
    builder => '_mk_theta2',
 );
 
 has b1 => (
-   is => 'ro',
+   is => 'rw',
    isa => 'PDL',
    lazy => 1,
    builder => '_mk_b1',
 );
 has b2 => (
-   is => 'ro',
+   is => 'rw',
    isa => 'PDL',
    lazy => 1,
    builder => '_mk_b2',
@@ -163,6 +164,22 @@ sub _mk_b2{
    my $self = shift;
    return grandom($self->l3) * .01;
 }
+
+sub resize_l2{
+   my $self = shift;
+   my $old_l2 = $self->l2;
+   my $new_l2 = shift;
+   die if $new_l2 >= $old_l2; #only reduce for now.
+   $self->l2($new_l2);
+   my $t1 = $self->theta1;
+   $self->theta1($t1->slice(":,0:".($new_l2-1)));
+   my $t2 = $self->theta2;
+   $self->theta2($t2->slice("0:".($new_l2-1)));
+#   die $self->b2->dims;
+   my $b1 = $self->b1;
+   $self->b1($b1->slice("0:".($new_l2-1)));
+}
+
 
 
 sub train{
