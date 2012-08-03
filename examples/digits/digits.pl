@@ -39,6 +39,7 @@ NODATA
 
 
 my $images = readflex('t10k-images-idx3-ubyte.flex');
+$images /= 256;
 my $labels = readflex('t10k-labels-idx1-ubyte.flex');
 
 my $nerl = AI::Nerl->new(
@@ -59,19 +60,19 @@ sub y_to_vectors{
 #   die $y->slice("0:9,0:19");
    return $y->transpose
 }
-for(1..42){
+for(1..402){
    $nerl->train_batch(
-      x => $images->slice("0:999"),
-      y => y_to_vectors $labels->slice("0:999"),
+      x => $images->slice("0:299"),
+      y => y_to_vectors $labels->slice("0:299"),
    );
    $nerl->spew_cost(
-      x => $images->slice("100:199"),
-      y => y_to_vectors $labels->slice("100:199"),
+      x => $images->slice("800:899"),
+      y => y_to_vectors $labels->slice("800:899"),
    );
 }
    print 'num correct:' . ( (
-      $nerl->classify( $images->slice("100:199"))->flat ==
-         $labels->slice("100:199")->flat
+      $nerl->classify( $images->slice("1000:1499"))->flat ==
+         $labels->slice("1000:1499")->flat
       )->sum
    );
 imag_theta1 $nerl->model->theta1;

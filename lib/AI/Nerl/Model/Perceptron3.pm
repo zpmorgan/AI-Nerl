@@ -127,7 +127,10 @@ sub run{
 sub classify{
    my ($self, $x) = @_; 
    my $a3 = $self->run($x);
-   my $maxes = 4;
+   my $maxes = $a3->transpose->maximum_ind;;
+   return $maxes;
+   die $maxes->slice("5:15");
+   die $maxes->dims;
    die $a3->slice("3:4");
    die $a3->dims;
 }
@@ -193,23 +196,22 @@ sub train{
    # warn $x->slice("10:18,10:18");;
    my $d2 = ($theta2 x $d3) * $self->_act_deriv->($z2);
    #warn $self->_act_deriv->($z2->sever)->slice("0:3,0:3");
-   warn $d2->slice("0:3,0:3");
 
    my $delta2 = $a2 x $d3->transpose;
    my $delta1 = $x x $d2->transpose;
-   my $deltab2 = $d3->sumover->flat;
+   my $deltab2 = $d3->sumover->flat->sever;
    my $deltab1 = $d2->sumover->flat;
-  
+
    my $difft1 = $alpha * (($delta1/$n) + ($theta1 * $lambda));
-   $self->theta1->inplace->minus($difft1->sever,0);
+   $self->theta1->inplace->minus($difft1->sever->copy,0);
 
    my $difft2 = $alpha * ($delta2/$n + $lambda*$theta2);
-   $self->theta2->inplace->minus($difft2->sever,0);
+   $self->theta2->inplace->minus($difft2->copy,0);
    
    my $diffb2 = ($alpha/$n)*$deltab2;
-   $self->b2->inplace->minus($diffb2,0);
+   $self->b2->inplace->minus($diffb2->copy,0);
    my $diffb1 = ($alpha/$n)*$deltab1;
-   $self->b1->inplace->minus($diffb1,0);
+   $self->b1->inplace->minus($diffb1->copy,0);
 
    return;
    #iterate over examples :(
