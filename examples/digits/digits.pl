@@ -59,7 +59,7 @@ sub y_to_vectors{
 #   die $y->slice("0:9,0:19");
    return $y->transpose
 }
-for(1..2){
+for(1..42){
    $nerl->train_batch(
       x => $images->slice("0:999"),
       y => y_to_vectors $labels->slice("0:999"),

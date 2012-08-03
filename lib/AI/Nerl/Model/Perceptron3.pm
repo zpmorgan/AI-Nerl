@@ -99,10 +99,10 @@ sub BUILD{
    my $ins = $self->inputs;
    my $outs = $self->outputs;
    my $l2 = $self->_l2_size;
-   $self->_privately_write_theta1(grandom($l2,$ins) * .0001);
-   $self->_privately_write_theta2(grandom($outs,$l2) * .001);
-   $self->_privately_write_b1(grandom($l2));
-   $self->_privately_write_b2(grandom($outs));
+   $self->_privately_write_theta1(grandom($l2,$ins) * .00001);
+   $self->_privately_write_theta2(grandom($outs,$l2) * .00001);
+   $self->_privately_write_b1(grandom($l2)*.0001);
+   $self->_privately_write_b2(grandom($outs)*.0001);
 };
 
 #a dimensional transform from $inputs to $outputs
@@ -121,7 +121,7 @@ sub run{
    $z3->transpose->inplace->plus($b2,0);
    my $a3 = $self->_act->($z3);
 
-   return $a3;;
+   return $a3;
 }
 #a dimensional transform from $inputs to 1
 sub classify{
@@ -146,15 +146,13 @@ sub spew_cost{
    my $b1 = $self->b1;
    my $b2 = $self->b2;
 
-   my $z2 = $x->transpose x $theta1;
-   $z2 += $b1;
+   my $z2 = $theta1->transpose x $x;
+   $z2->transpose->inplace->plus($b1,0);
    my $a2 = $self->_act->($z2);
 
-   my $z3 = $a2 x $theta2;
-   $z3 += $b2;
-   $z3 = $z3->transpose;
+   my $z3 = $theta2->transpose x $a2;
+   $z3->transpose->inplace->plus($b2,0);
    my $a3 = $self->_act->($z3);
-   #warn $a2->slice(":,3");
 
    my $J = .5 * (sum(($a3 - $y)**2)) / $x->dim(1);;
    print "COST: $J \n";
@@ -166,9 +164,8 @@ sub train{
    my $x = $args{x}; #dims: (cases,inputs)
    my $y = $args{y}; #(cases,outputs)
 
-   my $passes = 1;
    my $alpha = .2;
-   my $lambda = .00;
+   my $lambda = .04;
 
    my $n = $x->dim(0);
 
@@ -180,39 +177,38 @@ sub train{
    # I sorta care that the input vectors remain vertical.
    # so for 100 inputs, dim(1)==100
    # dim(0) == bias
-   my $z2 = $x->transpose x $theta1;
-   $z2 += $b1;
+   my $z2 = $theta1->transpose x $x;
+   $z2->transpose->inplace->plus($b1,0);
    my $a2 = $self->_act->($z2);
 
-   my $z3 = $a2 x $theta2;
-   $z3 += $b2;
-   $z3 = $z3->transpose;
+   my $z3 = $theta2->transpose x $a2;
+   $z3->transpose->inplace->plus($b2,0);
    my $a3 = $self->_act->($z3);
-
    #die $a3->dims; #(cats,n)
    #so far so good.
    #die $z3->slice("0:5,0:5");
 
    my $d3 = -($y-$a3)*$self->_act_deriv->($z3);
-   $d3 = $d3->transpose;
 #   warn $self->_act_deriv->($z3)->slice("0:5,0:3");;
    # warn $x->slice("10:18,10:18");;
-   my $d2 = ($d3 x $theta2->transpose) * $self->_act_deriv->($z2);
+   my $d2 = ($theta2 x $d3) * $self->_act_deriv->($z2);
+   #warn $self->_act_deriv->($z2->sever)->slice("0:3,0:3");
+   warn $d2->slice("0:3,0:3");
 
-   my $delta2 = $a2->transpose x $d3;
-   my $delta1 = $x x $d2;
-   my $deltab2 = $d3->transpose->sumover->flat;
-   my $deltab1 = $d2->transpose->sumover->flat;
-   
+   my $delta2 = $a2 x $d3->transpose;
+   my $delta1 = $x x $d2->transpose;
+   my $deltab2 = $d3->sumover->flat;
+   my $deltab1 = $d2->sumover->flat;
+  
    my $difft1 = $alpha * (($delta1/$n) + ($theta1 * $lambda));
-   $self->theta1->inplace->minus($difft1,0);
+   $self->theta1->inplace->minus($difft1->sever,0);
 
    my $difft2 = $alpha * ($delta2/$n + $lambda*$theta2);
-   $self->theta2->inplace->minus($difft2,0);
+   $self->theta2->inplace->minus($difft2->sever,0);
    
-   my $diffb2 = ($alpha/$n)*$d3;
+   my $diffb2 = ($alpha/$n)*$deltab2;
    $self->b2->inplace->minus($diffb2,0);
-   my $diffb1 = ($alpha/$n)*$d2;
+   my $diffb1 = ($alpha/$n)*$deltab1;
    $self->b1->inplace->minus($diffb1,0);
 
    return;
