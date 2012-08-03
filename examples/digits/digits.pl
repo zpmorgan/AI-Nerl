@@ -1,26 +1,72 @@
-#!/usr/bin/perl
-
+#!/usr/bin/env perl
 use Modern::Perl;
-use PDL;
-use PDL::NiceSlice;
-use PDL::IO::FITS;
-#use PDL::Constants 'E';
-use constant E     => exp(1);
-use lib 'lib';
-use lib '../../lib';
-use AI::Nerl;
-
 use FindBin qw($Bin); 
 chdir $Bin;
+use lib '../../lib';
+use AI::Nerl;
+use PDL;
+#use PDL::NiceSlice;
+use PDL::IO::FlexRaw;
+#use PDL::Constants 'E';
+use constant E     => exp(1);
+#use lib 'lib';
+use PDL::Graphics2D;
 
-unless (-e "t10k-labels-idx1-ubyte.fits"){ die <<"NODATA";}
+sub imag_neuron{
+   my $foo = shift;
+   $foo = $foo->reshape(28,28);
+   $foo = $foo - $foo->min;
+   $foo /= $foo->max;
+   warn $foo->sum;
+   imag2d $foo;
+}
+
+
+unless (-e "t10k-labels-idx1-ubyte.flex"){ die <<"NODATA";}
 pull this data by running get_digits.sh
-convert it to FITS by running idx_to_fits.pl
+convert it to flexraw by running idx_to_flex.pl
 NODATA
 
 
-my $images = rfits('t10k-images-idx3-ubyte.fits');
-my $labels = rfits('t10k-labels-idx1-ubyte.fits');
+my $images = readflex('t10k-images-idx3-ubyte.flex');
+my $labels = readflex('t10k-labels-idx1-ubyte.flex');
+
+my $nerl = AI::Nerl->new(
+   model => 'Perceptron3',
+   model_args => {
+      l2 => 20
+   },
+   inputs => 784,
+   outputs => 10,
+);
+my $foo = $nerl->model->theta1->slice(4);
+imag_neuron $foo;
+
+sub y_to_vectors{
+   my $labels = shift;
+   my $id = identity(10);
+   my $y = $id->range($labels->dummy(0))->transpose;
+   $y *= 2;
+   $y -= 1;
+#   die $y->slice("0:9,0:19");
+   return $y
+}
+for(1..44){
+   $nerl->train_batch(
+      x => $images->slice("0:999"),
+      y => y_to_vectors $labels->slice("0:999"),
+   );
+   $nerl->spew_cost(
+      x => $images->slice("100:199"),
+      y => y_to_vectors $labels->slice("100:199"),
+   );
+}
+$foo = $nerl->model->theta1->slice(4);
+imag_neuron $foo;
+
+# a second __END__ :)
+__END__
+
 my $y = identity(10)->range($labels->transpose)->sever;
 $y *= 2;
 $y -= 1;
@@ -52,6 +98,8 @@ for(1..300){
    print $nerl->network->run($images(0:4));
    $nerl->network->show_neuron($_) for (0..4);
 }
+
+
 
 __END__
 #my $label_targets = identity(10)->($labels);

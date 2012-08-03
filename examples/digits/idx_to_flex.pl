@@ -1,10 +1,10 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use Modern::Perl;
 use PDL;
 use PDL::NiceSlice;
 use File::Slurp;
-use PDL::IO::FITS;
+use PDL::IO::FlexRaw;
 
 use FindBin qw($Bin); 
 chdir $Bin;
@@ -38,5 +38,6 @@ elsif ($dims[1]==28){ #images
 }
 say "out: " . join ',',$img_pdl->dims;
 
-$img_pdl->wfits($img_filename . '.fits');
+$PDL::IO::FlexRaw::writeflexhdr = 1;
+writeflex($img_filename . '.flex', $img_pdl);
 

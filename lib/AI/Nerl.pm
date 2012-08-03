@@ -1,30 +1,39 @@
 package AI::Nerl;
-use Moose 'has',inner => { -as => 'moose_inner' };
+use Moose (qw'around has with' ,inner => { -as => 'moose_inner' });
 use PDL;
 use AI::Nerl::Network;
 use File::Slurp;
 use JSON;
 
-# ABSTRACT: Neural networks with backpropagation.
+# ABSTRACT: generalized machine learning?
 
 # main_module
 
-our $VERSION = .03;
+our $VERSION = .04;
 
-#A Nerl is a mechanism to build neural networks?
-#Give it training,test, and cv data?
-#it settles on a learning rate and stuff?
-#or maybe it's also a language for guided training?
-#or maybe a visual gui thing?
-#Not exactly sure. Maybe I'm tinkering with forces better left alone.
-#That's a great excuse for failing horribly.
+# A Nerl is an umbrella class to support different ML modules.
+# train it with batch or online modes. trainers provided.
+# I guess it settles on different parameters?
+# This is pretty much a reboot.
+# Importer for earler version?
 
 
-=head1 AI::Nerl - A sort of stackable neural network builder thing.
+=head1 AI::Nerl - Generalized machine learning. only perceptrons for now.
 
 =head1 SYNOPSIS
 
-Check out L<AI::Nerl::Network>; This module is in an early stage.
+Check out L<AI::Nerl::Model::Perceptron3>; This module is in an early stage.
+Future plans are to support modular neural networks, rbf networks, and SVMs
+of some sort.
+
+Basically, each nerl has a model (like such as perceptron3) & maybe a trainer 
+(like such as AI::Model::Perceptron3::BatchTrainer?).
+
+Models should implement run, maybe provide changesets from training.
+They are initialized with their own set of arguments provided to nerl's constructor.
+
+Nerl has inputs & outputs. all training(batch & online) ought to
+be directed through the nerl, which selects an appropriate trainer.
 
 =head1 AUTHOR
 
@@ -33,48 +42,68 @@ Zach Morgan
 =cut
 
 
-
-has scale_input => (
-   is => 'ro',
-   isa => 'Num',
-   required => 0,
-   default => 0,
-);
+# how to handle resizing?
+# maybe generate a new model & copy data over.
 has [qw/inputs outputs/] => (
    is => 'ro',
-   isa => 'Num'
-);
-has l2 => ( #hidden layer.
-   is => 'rw',
-   isa => 'Num',
-   default => 30,
+   isa => 'Int',
 );
 
-has [qw/ train_x 
-         train_y /] => (
-   is => 'rw',
-   isa => 'PDL',
-   required => 0, #training can be done manually.
-);
-has [qw/ test_x cv_x
-         test_y cv_y /] => (
-   is => 'rw',
-   isa => 'PDL',
-   required => 0,
-);
-
-has network => (
-   required=>0,
-   is => 'rw',
-   isa => 'AI::Nerl::Network',
-);
-
-
-has basis => (
+has _model_init_args => (
+   init_arg => 'model_args',
    is => 'ro',
-   isa => 'AI::Nerl',
-   required => 0,
+   isa => 'HashRef',
+   default => sub{{}},
 );
+has _specified_model_type => (
+   #init_arg => 'model', #munged in BUILDARGS from 'model'
+   is => 'ro',
+   isa => 'Str',
+   required => 1,
+);
+has model => (
+   is => 'rw',
+   isa => 'AI::Nerl::Model',
+   builder => '_build_model',
+   lazy => 1,
+);
+
+around BUILDARGS => sub {
+   my $orig = shift;
+   my $self = shift;
+   my %args = ref $_[0] ? %{shift()} : @_;
+
+   die 'need a model type' unless exists $args{model};
+   $args{_specified_model_type} = delete $args{model};
+
+   $self->$orig(%args);
+};
+
+use AI::Nerl::Model::Perceptron3;
+
+sub _build_model{
+   my $self = shift;
+   my $type = $self->_specified_model_type;
+   die 'do model=>"Perceptron3"' unless $type eq 'Perceptron3';
+
+   my %model_args = %{$self->_model_init_args};
+   $model_args{inputs} = $self->inputs;
+   $model_args{outputs} = $self->outputs;
+   return AI::Nerl::Model::Perceptron3->new(%model_args);
+}
+
+# er, these go to trainer.
+sub spew_cost{
+   my $self = shift;
+   return $self->model->spew_cost(@_);
+}
+sub train_batch{
+   my $self = shift;
+   $self->model->train_batch(@_);
+}
+
+1;
+__END__
 
 #initialize $self->network, but don't train.
 # any parameters AI::Nerl::Network takes are fine here.
