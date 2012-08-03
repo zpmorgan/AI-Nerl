@@ -79,8 +79,6 @@ sub _build_act_sub{
    return sub{
       my $in = shift;
       return $in->tanh;
-#      my $exp = exp($in*2);
-#      return (($exp-1)/($exp+1));
    };
 }
 sub _build_act_deriv_sub{
@@ -187,15 +185,10 @@ sub train{
    my $z3 = $theta2->transpose x $a2;
    $z3->transpose->inplace->plus($b2,0);
    my $a3 = $self->_act->($z3);
-   #die $a3->dims; #(cats,n)
    #so far so good.
-   #die $z3->slice("0:5,0:5");
 
    my $d3 = -($y-$a3)*$self->_act_deriv->($z3);
-#   warn $self->_act_deriv->($z3)->slice("0:5,0:3");;
-   # warn $x->slice("10:18,10:18");;
    my $d2 = ($theta2 x $d3) * $self->_act_deriv->($z2);
-   #warn $self->_act_deriv->($z2->sever)->slice("0:3,0:3");
 
    my $delta2 = $a2 x $d3->transpose;
    my $delta1 = $x x $d2->transpose;
@@ -214,45 +207,7 @@ sub train{
    $self->b1->inplace->minus($diffb1,0);
 
    return;
-   #iterate over examples :(
-=pod
-   for my $i (0..$num_examples-1){
-      my $a1 = $x(($i));
-      my $z2 = ($self->theta1 x $a1->transpose)->squeeze;
-      $z2 += $self->b1; #add bias.
-      my $a2 = $z2->tanh;
-      my $z3 = ($self->theta2 x $a2->transpose)->squeeze;
-      $z3 += $self->b2; #add bias.
-      my $a3 = $z3->tanh;
-      # warn $y(($i)) - $a3;
-      my $d3= -($y(($i)) - $a3) * tanhxderivative($a3);
-      #warn $d3;
-      $delta2 += $d3->transpose x $a2;
-      my $d2 = ($self->theta2->transpose x $d3->transpose)->squeeze * tanhxderivative($a2);
-      $delta1 += $d2->transpose x $a1;
-      #warn $delta2(4);
-      $deltab1 += $d2;
-      $deltab2 += $d3;
-
-      if($DEBUG==1){
-         warn "z2: $z2\n$z3: $z3\n";
-         warn "d3:$d3\n";
-      }
-   }
-   #warn $deltab1;
-   if($DEBUG==1){
-      warn "theta1: ". $self->theta1;#/ $num_examples;
-      warn "theta2: ". $self->theta2;
-      warn "delta1: $delta1\n";
-      warn "delta2: $delta2\n";
-   }
-   $self->{theta2} -= $alpha * ($delta2 / $num_examples + $theta2 * $lambda);
-   $self->{theta1} -= $alpha * ($delta1 / $num_examples + $theta1 * $lambda);
-   $self->{b1} -= $alpha * $deltab1 / $num_examples;
-   $self->{b2} -= $alpha * $deltab2 / $num_examples;
-=cut
 }
 
-1;
-
+'$nn->train($soviet_russian);'
 
