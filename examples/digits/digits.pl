@@ -15,10 +15,20 @@ use PDL::Graphics2D;
 sub imag_neuron{
    my $foo = shift;
    $foo = $foo->reshape(28,28);
-   $foo = $foo - $foo->min;
-   $foo /= $foo->max;
+   $foo = normlz $foo;
    warn $foo->sum;
    imag2d $foo;
+}
+sub normlz{
+   my $foo = shift;
+   $foo = $foo - $foo->min;
+   $foo /= $foo->max;
+   return $foo;
+}
+sub imag_theta1{
+   my $t1 = shift;
+   $t1 = $t1->transpose->reshape(28,28*10)->sever;
+   imag2d normlz $t1;
 }
 
 
@@ -39,8 +49,6 @@ my $nerl = AI::Nerl->new(
    inputs => 784,
    outputs => 10,
 );
-my $foo = $nerl->model->theta1->slice(4);
-imag_neuron $foo;
 
 sub y_to_vectors{
    my $labels = shift;
@@ -49,9 +57,9 @@ sub y_to_vectors{
    $y *= 2;
    $y -= 1;
 #   die $y->slice("0:9,0:19");
-   return $y
+   return $y->transpose
 }
-for(1..44){
+for(1..2){
    $nerl->train_batch(
       x => $images->slice("0:999"),
       y => y_to_vectors $labels->slice("0:999"),
@@ -61,8 +69,14 @@ for(1..44){
       y => y_to_vectors $labels->slice("100:199"),
    );
 }
-$foo = $nerl->model->theta1->slice(4);
-imag_neuron $foo;
+   print 'num correct:' . ( (
+      $nerl->classify( $images->slice("100:199"))->flat ==
+         $labels->slice("100:199")->flat
+      )->sum
+   );
+imag_theta1 $nerl->model->theta1;
+#$foo = $nerl->model->theta1->slice(4);
+#imag_neuron ($foo);# * ($foo>1));
 
 # a second __END__ :)
 __END__

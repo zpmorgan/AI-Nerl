@@ -93,6 +93,10 @@ sub _build_model{
 }
 
 # er, these go to trainer.
+sub classify{
+   my $self = shift;
+   return $self->model->classify(@_);
+}
 sub spew_cost{
    my $self = shift;
    return $self->model->spew_cost(@_);

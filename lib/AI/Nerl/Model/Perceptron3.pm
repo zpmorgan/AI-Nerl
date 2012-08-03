@@ -108,10 +108,28 @@ sub BUILD{
 #a dimensional transform from $inputs to $outputs
 sub run{
    my ($self, $x) = @_; 
+   my $theta1 = $self->theta1;
+   my $theta2 = $self->theta2;
+   my $b1 = $self->b1;
+   my $b2 = $self->b2;
+
+   my $z2 = $theta1->transpose x $x;
+   $z2->transpose->inplace->plus($b1,0);
+   my $a2 = $self->_act->($z2);
+
+   my $z3 = $theta2->transpose x $a2;
+   $z3->transpose->inplace->plus($b2,0);
+   my $a3 = $self->_act->($z3);
+
+   return $a3;;
 }
 #a dimensional transform from $inputs to 1
 sub classify{
    my ($self, $x) = @_; 
+   my $a3 = $self->run($x);
+   my $maxes = 4;
+   die $a3->slice("3:4");
+   die $a3->dims;
 }
 
 sub train_batch{
@@ -134,6 +152,7 @@ sub spew_cost{
 
    my $z3 = $a2 x $theta2;
    $z3 += $b2;
+   $z3 = $z3->transpose;
    my $a3 = $self->_act->($z3);
    #warn $a2->slice(":,3");
 
@@ -144,8 +163,8 @@ sub spew_cost{
 #modify the b's,thetas
 sub train{
    my ($self, %args) = @_; 
-   my $x = $args{x};
-   my $y = $args{y};
+   my $x = $args{x}; #dims: (cases,inputs)
+   my $y = $args{y}; #(cases,outputs)
 
    my $passes = 1;
    my $alpha = .2;
@@ -167,6 +186,7 @@ sub train{
 
    my $z3 = $a2 x $theta2;
    $z3 += $b2;
+   $z3 = $z3->transpose;
    my $a3 = $self->_act->($z3);
 
    #die $a3->dims; #(cats,n)
@@ -174,6 +194,7 @@ sub train{
    #die $z3->slice("0:5,0:5");
 
    my $d3 = -($y-$a3)*$self->_act_deriv->($z3);
+   $d3 = $d3->transpose;
 #   warn $self->_act_deriv->($z3)->slice("0:5,0:3");;
    # warn $x->slice("10:18,10:18");;
    my $d2 = ($d3 x $theta2->transpose) * $self->_act_deriv->($z2);
