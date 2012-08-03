@@ -167,7 +167,7 @@ sub train{
    my $x = $args{x}; #dims: (cases,inputs)
    my $y = $args{y}; #(cases,outputs)
 
-   my $alpha = .2;
+   my $alpha = .3;
    my $lambda = .04;
 
    my $n = $x->dim(0);
@@ -203,15 +203,15 @@ sub train{
    my $deltab1 = $d2->sumover->flat;
 
    my $difft1 = $alpha * (($delta1/$n) + ($theta1 * $lambda));
-   $self->theta1->inplace->minus($difft1->sever->copy,0);
+   $self->theta1->inplace->minus($difft1,0);
 
    my $difft2 = $alpha * ($delta2/$n + $lambda*$theta2);
-   $self->theta2->inplace->minus($difft2->copy,0);
+   $self->theta2->inplace->minus($difft2,0);
    
    my $diffb2 = ($alpha/$n)*$deltab2;
-   $self->b2->inplace->minus($diffb2->copy,0);
+   $self->b2->inplace->minus($diffb2,0);
    my $diffb1 = ($alpha/$n)*$deltab1;
-   $self->b1->inplace->minus($diffb1->copy,0);
+   $self->b1->inplace->minus($diffb1,0);
 
    return;
    #iterate over examples :(

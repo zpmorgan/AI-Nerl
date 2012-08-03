@@ -5,12 +5,10 @@ chdir $Bin;
 use lib '../../lib';
 use AI::Nerl;
 use PDL;
-#use PDL::NiceSlice;
 use PDL::IO::FlexRaw;
-#use PDL::Constants 'E';
-use constant E     => exp(1);
-#use lib 'lib';
 use PDL::Graphics2D;
+use POSIX ();
+use constant E     => exp(1);
 
 sub imag_neuron{
    my $foo = shift;
@@ -27,8 +25,20 @@ sub normlz{
 }
 sub imag_theta1{
    my $t1 = shift;
-   $t1 = $t1->transpose->reshape(28,28*10)->sever;
-   imag2d normlz $t1;
+   my $n = $t1->dim(0);
+   my $cols = 7;
+   my $rows = POSIX::ceil ($n/$cols);
+   my $tmp_piddle = zeroes(28*$cols,28*$rows);
+   for my $i(0..$n-1){
+      my $row = POSIX::floor($i/$cols);
+      my $col = $i % $cols;
+      my $x = $col*28;
+      my $y = $row*28;
+      my $slice = $tmp_piddle->slice("$x:".($x+27).",$y:".($y+27));
+      $slice .= $t1->slice($i)->reshape(28,28);
+   }
+   #$t1 = $t1->transpose->reshape(28,28*10)->sever;
+   imag2d normlz $tmp_piddle;
 }
 
 
@@ -45,7 +55,7 @@ my $labels = readflex('t10k-labels-idx1-ubyte.flex');
 my $nerl = AI::Nerl->new(
    model => 'Perceptron3',
    model_args => {
-      l2 => 20
+      l2 => 10
    },
    inputs => 784,
    outputs => 10,
@@ -60,10 +70,10 @@ sub y_to_vectors{
 #   die $y->slice("0:9,0:19");
    return $y->transpose
 }
-for(1..402){
+for(1..200){
    $nerl->train_batch(
-      x => $images->slice("0:299"),
-      y => y_to_vectors $labels->slice("0:299"),
+      x => $images->slice("0:799"),
+      y => y_to_vectors $labels->slice("0:799"),
    );
    $nerl->spew_cost(
       x => $images->slice("800:899"),
