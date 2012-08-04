@@ -10,6 +10,8 @@ use MooseX::Storage;
 
 with Storage('format' => 'JSON', 'io' => 'File');
 
+our $VERSION=0.01;
+
 extends 'AI::Nerl::Model';
 
 # nice 3-layer perceptron.
@@ -21,12 +23,13 @@ extends 'AI::Nerl::Model';
 # subtype 'PositiveInt'
 # has [qw/inputs outputs/] 
 
-#hidden size
+#hidden size. argument.
 has _l2_size => (
    init_arg => 'l2',
    is => 'ro',
    isa => 'PositiveInt',
-   required => 1,
+   required => 0,
+#   traits => ['DoNotSerialize'],
 );
 
 for(qw/theta1 theta2 b1 b2/){
@@ -94,9 +97,13 @@ sub _build_act_deriv_sub{
 # this should also load from some crapfile if saved.
 sub BUILD{
    my $self = shift;
+   # are these piddles provided?
+   return if defined $self->theta1;
+
    my $ins = $self->inputs;
    my $outs = $self->outputs;
    my $l2 = $self->_l2_size;
+   die 'need an l2 size' unless $l2;
    $self->_privately_write_theta1(grandom($l2,$ins) * .00001);
    $self->_privately_write_theta2(grandom($outs,$l2) * .00001);
    $self->_privately_write_b1(grandom($l2)*.0001);
@@ -207,6 +214,38 @@ sub train{
    $self->b1->inplace->minus($diffb1,0);
 
    return;
+}
+
+use PDL::IO::FlexRaw;
+use File::Slurp;
+use JSON;
+sub save_to_dir{
+   my ($self,$dir) = @_;
+   die 'mustbeclasspathdir' unless $dir->isa ('Path::Class::Dir');
+   die "direxists $dir" if -e $dir;
+   $dir->mkpath;
+   my $frozen = $self->freeze;
+   write_file($dir->file('perceptron3.json')->stringify, $frozen);
+   #theta1,theta2,b1,b2
+   $PDL::IO::FlexRaw::writeflexhdr = 1;
+   writeflex($dir->file('piddles.flex')->stringify,
+      $self->theta1,$self->theta2,$self->b1,$self->b2);
+}
+sub load_from_dir{
+   my $class = shift;
+   my $dir = shift;
+   die 'mustbeclasspathdir' unless $dir->isa ('Path::Class::Dir');
+   die 'dirNonExistant '.$dir unless -e $dir;
+   my $frozen = read_file($dir->file('perceptron3.json'));
+   my ($theta1,$theta2,$b1,$b2) = readflex($dir->file('piddles.flex')->stringify);
+
+   my $from_json = from_json($frozen);
+   my $self = AI::Nerl::Model::Perceptron3->unpack($from_json, 
+      inject => {
+         theta1 => $theta1, theta2 => $theta2,
+         b1 => $b1, b2 => $b2,
+      });
+   return $self;
 }
 
 '$nn->train($soviet_russian);'

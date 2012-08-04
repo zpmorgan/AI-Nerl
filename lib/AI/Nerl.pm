@@ -1,15 +1,18 @@
 package AI::Nerl;
 use Moose (qw'around has with' ,inner => { -as => 'moose_inner' });
 use PDL;
-use AI::Nerl::Network;
 use File::Slurp;
 use JSON;
+
+use MooseX::Storage;
+use Path::Class;
+with Storage(format=>'JSON'); 
 
 # ABSTRACT: generalized machine learning?
 
 # main_module
 
-our $VERSION = .04;
+our $VERSION = 1.00;
 
 # A Nerl is an umbrella class to support different ML modules.
 # train it with batch or online modes. trainers provided.
@@ -65,6 +68,7 @@ has model => (
    is => 'rw',
    isa => 'AI::Nerl::Model',
    builder => '_build_model',
+   traits => ['DoNotSerialize'],
    lazy => 1,
 );
 
@@ -73,9 +77,11 @@ around BUILDARGS => sub {
    my $self = shift;
    my %args = ref $_[0] ? %{shift()} : @_;
 
-   die 'need a model type' unless exists $args{model};
-   $args{_specified_model_type} = delete $args{model};
-
+   #this is defined if stored, not if we're generating a new one.
+   unless(defined $args{_specified_model_type}){
+      die 'need a model type' unless exists $args{model};
+      $args{_specified_model_type} = delete $args{model};
+   }
    $self->$orig(%args);
 };
 
@@ -106,4 +112,28 @@ sub train_batch{
    $self->model->train_batch(@_);
 }
 
+#use pack,freeze,& write_file
+sub save_to_dir{
+   my ($self,$dir, %args) = @_;
+   $dir = Path::Class::dir($dir) unless ref ($dir)eq'Path::Class::Dir';
+   die 'won\'t overwrite unless you say to.' if -e $dir and !$args{overwrite};
+   rename($dir->stringify,$dir->stringify . '.backup') if -e $dir;
+
+   $dir->mkpath;
+   $self->model->save_to_dir($dir->subdir('model'));
+   my $frozen = $self->freeze;
+   write_file($dir->file('nerl.json')->stringify,$frozen);
+}
+
+use JSON;
+sub load_from_dir{
+   my $class = shift;
+   my $dir = shift;
+   $dir = Path::Class::dir($dir) unless ref ($dir)eq'Path::Class::Dir';
+   my $frozen = read_file($dir->file('nerl.json')->stringify);
+   my $from_json = from_json($frozen);
+   my $model = AI::Nerl::Model::Perceptron3->load_from_dir($dir->subdir('model'));
+   my $self = AI::Nerl->unpack($from_json, inject=>{model => $model});
+   return $self;
+}
 'a neural network has your dog.';

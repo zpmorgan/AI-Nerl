@@ -54,7 +54,7 @@ my $labels = readflex('t10k-labels-idx1-ubyte.flex');
 my $nerl = AI::Nerl->new(
    model => 'Perceptron3',
    model_args => {
-      l2 => 10
+      l2 => 20
    },
    inputs => 784,
    outputs => 10,
@@ -68,7 +68,7 @@ sub y_to_vectors{
    $y -= 1;
    return $y->transpose
 }
-for(1..20){
+for(1..300){
    $nerl->train_batch(
       x => $images->slice("0:799"),
       y => y_to_vectors $labels->slice("0:799"),
@@ -84,3 +84,6 @@ for(1..20){
       )->sum
    );
 imag_theta1 $nerl->model->theta1;
+
+$nerl->save_to_dir('foo', overwrite => 1);
+

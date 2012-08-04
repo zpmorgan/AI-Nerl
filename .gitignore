@@ -5,3 +5,4 @@
 
 *.flex
 *.flex.hdr
+examples/digits/foo*
