@@ -226,9 +226,12 @@ use PDL::IO::FlexRaw;
 use File::Slurp;
 use JSON;
 sub save_to_dir{
-   my ($self,$dir) = @_;
+   my ($self,$dir, %args) = @_;
    die 'mustbeclasspathdir' unless $dir->isa ('Path::Class::Dir');
-   die "direxists $dir" if -e $dir;
+   if (-e $dir){ #why overwrite? nerls should be saved directly, not models
+      die "direxists $dir" unless $args{overwrite};
+      $dir->rmtree;
+   }
    $dir->mkpath;
    my $frozen = $self->freeze;
    write_file($dir->file('perceptron3.json')->stringify, $frozen);

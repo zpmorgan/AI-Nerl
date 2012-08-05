@@ -124,12 +124,19 @@ has test_x => (is=>'rw',isa=>'PDL',traits=>['DoNotSerialize']);
 has test_y => (is=>'rw',isa=>'PDL',traits=>['DoNotSerialize']);
 
 use PDL::IO::FlexRaw;
+use File::Copy 'move';
 #use pack,freeze,& write_file
 sub save_to_dir{
    my ($self,$dir, %args) = @_;
    $dir = Path::Class::dir($dir) unless ref ($dir)eq'Path::Class::Dir';
-   die 'won\'t overwrite unless you say to.' if -e $dir and !$args{overwrite};
-   rename($dir->stringify,$dir->stringify . '.backup') if -e $dir;
+   $dir = $dir->absolute->resolve;
+   my $backup_dir = $dir->parent->subdir($dir->dir_list(-1,1) . '.backup');
+  
+   if(-e $dir){
+      die 'won\'t overwrite unless you say to' unless $args{overwrite};
+      $backup_dir->rmtree if -e $backup_dir;
+      move($dir->stringify,$backup_dir->stringify);
+   }
 
    $dir->mkpath;
    $self->model->save_to_dir($dir->subdir('model'));
