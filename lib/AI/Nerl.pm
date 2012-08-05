@@ -129,7 +129,7 @@ use File::Copy 'move';
 sub save_to_dir{
    my ($self,$dir, %args) = @_;
    $dir = Path::Class::dir($dir) unless ref ($dir)eq'Path::Class::Dir';
-   $dir = $dir->absolute->resolve;
+   $dir = $dir->absolute->cleanup;
    my $backup_dir = $dir->parent->subdir($dir->dir_list(-1,1) . '.backup');
   
    if(-e $dir){
