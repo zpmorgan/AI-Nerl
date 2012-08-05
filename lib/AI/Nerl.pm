@@ -107,11 +107,23 @@ sub spew_cost{
    my $self = shift;
    return $self->model->spew_cost(@_);
 }
+sub trainer_spew_cost{
+   my $self = shift;
+   return $self->model->spew_cost(x=>$self->test_x, y=>$self->test_y);
+}
 sub train_batch{
    my $self = shift;
    $self->model->train_batch(@_);
 }
+sub set_test_xy{
+   my ($self,$x,$y) = @_;
+   $self->test_x($x);
+   $self->test_y($y);
+}
+has test_x => (is=>'rw',isa=>'PDL',traits=>['DoNotSerialize']);
+has test_y => (is=>'rw',isa=>'PDL',traits=>['DoNotSerialize']);
 
+use PDL::IO::FlexRaw;
 #use pack,freeze,& write_file
 sub save_to_dir{
    my ($self,$dir, %args) = @_;
@@ -123,6 +135,9 @@ sub save_to_dir{
    $self->model->save_to_dir($dir->subdir('model'));
    my $frozen = $self->freeze;
    write_file($dir->file('nerl.json')->stringify,$frozen);
+   $PDL::IO::FlexRaw::writeflexhdr = 1;
+   writeflex($dir->file('trainer_piddles.flex')->stringify,
+      $self->test_x,$self->test_y);
 }
 
 use JSON;
@@ -133,7 +148,13 @@ sub load_from_dir{
    my $frozen = read_file($dir->file('nerl.json')->stringify);
    my $from_json = from_json($frozen);
    my $model = AI::Nerl::Model::Perceptron3->load_from_dir($dir->subdir('model'));
-   my $self = AI::Nerl->unpack($from_json, inject=>{model => $model});
+   my %foo; #stuff that a ai::n::trainer deserves
+   if(-e $dir->file('trainer_piddles.flex')){
+      @foo{qw/test_x test_y/} = readflex($dir->file('trainer_piddles.flex')->stringify);
+   }
+
+   my $self = AI::Nerl->unpack($from_json, 
+      inject=>{model => $model, %foo});
    return $self;
 }
 'a neural network has your dog.';
