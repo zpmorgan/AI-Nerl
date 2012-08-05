@@ -163,8 +163,8 @@ sub spew_cost{
    my $z3 = $theta2->transpose x $a2;
    $z3->transpose->inplace->plus($b2,0);
    my $a3 = $self->_act->($z3);
-
-   my $J = .05 * (sum(($a3 - $y)**2)) / $x->dim(0);;
+   
+   my $J = (.5/$x->dim(0)) * sum(($a3 - $y)**2);;
    $J += ($lambda/2) * (($theta1**2)->sum + ($theta2**2)->sum);
    print "COST: $J \n";
    my $maxes = $a3->transpose->maximum_ind;;
