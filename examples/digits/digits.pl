@@ -68,21 +68,22 @@ sub y_to_vectors{
    $y -= 1;
    return $y->transpose
 }
+#$nerl->test_x ($images->slice("000:799"));
+#$nerl->test_y (y_to_vectors $labels->slice("000:799"));
+$nerl->test_x ($images->slice("800:899"));
+$nerl->test_y (y_to_vectors $labels->slice("800:899"));
 for(1..300){
    $nerl->train_batch(
       x => $images->slice("0:799"),
       y => y_to_vectors $labels->slice("0:799"),
    );
-   $nerl->spew_cost(
-      x => $images->slice("800:899"),
-      y => y_to_vectors $labels->slice("800:899"),
-   );
+   $nerl->trainer_spew_cost;
 }
-   print 'num correct:' . ( (
-      $nerl->classify( $images->slice("1000:1499"))->flat ==
-         $labels->slice("1000:1499")->flat
-      )->sum
-   );
+print 'num correct of 1000 others:' . ( (
+      $nerl->classify( $images->slice("1000:1999"))->flat ==
+      $labels->slice("1000:1999")->flat
+   )->sum
+);
 imag_theta1 $nerl->model->theta1;
 
 $nerl->save_to_dir('foo', overwrite => 1);
