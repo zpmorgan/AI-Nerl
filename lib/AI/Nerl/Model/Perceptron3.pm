@@ -149,6 +149,8 @@ sub spew_cost{
    my ($self, %args) = @_; 
    my $x = $args{x};
    my $y = $args{y};
+   my $lambda = $args{lambda} // .04;
+   my $alpha = $args{lambda} // .25;
    my $theta1 = $self->theta1;
    my $theta2 = $self->theta2;
    my $b1 = $self->b1;
@@ -162,8 +164,12 @@ sub spew_cost{
    $z3->transpose->inplace->plus($b2,0);
    my $a3 = $self->_act->($z3);
 
-   my $J = .5 * (sum(($a3 - $y)**2)) / $x->dim(1);;
+   my $J = .05 * (sum(($a3 - $y)**2)) / $x->dim(0);;
+   $J += ($lambda/2) * (($theta1**2)->sum + ($theta2**2)->sum);
    print "COST: $J \n";
+   my $maxes = $a3->transpose->maximum_ind;;
+   my $labels = $y->transpose->maximum_ind;
+   print "num correct(of ".($x->dim(0))."): ".(($labels==$maxes)->sum)."\n";
 }
 
 #modify the b's,thetas
@@ -172,7 +178,7 @@ sub train{
    my $x = $args{x}; #dims: (cases,inputs)
    my $y = $args{y}; #(cases,outputs)
 
-   my $alpha = .3;
+   my $alpha = .25;
    my $lambda = .04;
 
    my $n = $x->dim(0);
