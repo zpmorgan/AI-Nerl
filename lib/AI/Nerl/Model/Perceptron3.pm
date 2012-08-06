@@ -147,8 +147,8 @@ sub train_batch{
 
 sub spew_cost{
    my ($self, %args) = @_; 
-   my $x = $args{x};
-   my $y = $args{y};
+   my $y = $args{y} // die 'need y';;
+   my $x = $args{x} // die 'need x';
    my $lambda = $args{lambda} // .04;
    my $alpha = $args{lambda} // .25;
    my $theta1 = $self->theta1;
@@ -169,6 +169,7 @@ sub spew_cost{
    print "COST: $J \n";
    my $maxes = $a3->transpose->maximum_ind;;
    my $labels = $y->transpose->maximum_ind;
+   #die $a3;
    print "num correct(of ".($x->dim(0))."): ".(($labels==$maxes)->sum)."\n";
 }
 
