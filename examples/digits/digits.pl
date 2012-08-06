@@ -72,14 +72,15 @@ sub y_to_vectors{
 #$nerl->test_y (y_to_vectors $labels->slice("000:799"));
 $nerl->test_x ($images->slice("800:899"));
 $nerl->test_y (y_to_vectors $labels->slice("800:899"));
-for(1..300){
+for(1..200){
    $nerl->train_batch(
       x => $images->slice("0:799"),
       y => y_to_vectors $labels->slice("0:799"),
    );
    $nerl->trainer_spew_cost;
 }
-print 'num correct of 1000 others:' . ( (
+
+say 'num correct of 1000 others:' . ( (
       $nerl->classify( $images->slice("1000:1999"))->flat ==
       $labels->slice("1000:1999")->flat
    )->sum
