@@ -105,11 +105,12 @@ sub classify{
 }
 sub spew_cost{
    my $self = shift;
+   die @_;
    return $self->model->spew_cost(@_);
 }
 sub trainer_spew_cost{
    my $self = shift;
-   return $self->model->spew_cost(x=>$self->test_x, y=>$self->test_y);
+   return $self->model->spew_cost(x=>$self->test_x, y=>$self->test_y, @_);
 }
 sub train_batch{
    my $self = shift;

@@ -150,7 +150,7 @@ sub spew_cost{
    my $y = $args{y} // die 'need y';;
    my $x = $args{x} // die 'need x';
    my $lambda = $args{lambda} // .04;
-   my $alpha = $args{lambda} // .25;
+   #my $alpha = $args{alpha} // .25;
    my $theta1 = $self->theta1;
    my $theta2 = $self->theta2;
    my $b1 = $self->b1;
