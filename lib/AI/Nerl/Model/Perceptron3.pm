@@ -220,6 +220,8 @@ sub train{
    $self->b2->inplace->minus($diffb2->copy,0);
    my $diffb1 = ($alpha/$n)*$deltab1;
    $self->b1->inplace->minus($diffb1->copy,0);
+   #warn "difft2: $difft2"; 
+   #warn "diffb2: $diffb2"; 
 
    return;
 }
@@ -262,10 +264,15 @@ sub load_from_dir{
 
 sub export_c{
    my $self = shift;
-   my $hdrs = "#include <math.h>\n\n";
-   $hdrs .= "float  x[".$self->l1."];\n";
-   $hdrs .= "float a2[".$self->l2."];\n";
-   $hdrs .= "float a3[".$self->l3."];\n\n";
+   my $hdr = "#include <math.h>\n\n";
+   $hdr .= "extern float*  x;\n";
+   $hdr .= "extern float* a2;\n";
+   $hdr .= "extern float* a3;\n\n";
+   my $globals = '';
+   $globals .= "float  x[".$self->l1."];\n";
+   $globals .= "float a2[".$self->l2."];\n";
+   $globals .= "float a3[".$self->l3."];\n\n";
+
    my @functions;
    
    for my $i (0..$self->l2-1){
@@ -277,6 +284,7 @@ sub export_c{
       push @func_lines, "  float act = tanh(sum);";
       push @func_lines, "  return act;";
       push @func_lines, "}";
+      $hdr .= "float do_l2_n$i(); \n";
       push @functions, join ("\n",@func_lines);
    }
    for my $i (0..$self->l3-1){
@@ -289,21 +297,26 @@ sub export_c{
       push @func_lines, "  return act;";
       push @func_lines, "}";
       push @functions, join ("\n",@func_lines);
+      $hdr .= "float float_do_l3_n$i(); \n";
    }
    {
       my @func_lines = "void do_l2(){";
       push @func_lines, map {"  a2[$_]=do_l2_n$_(x);"} 0..$self->l2-1;
       push @func_lines, "}";
       push @functions, join ("\n",@func_lines);
+      $hdr .= "void float_do_l2();\n";
    }
    {
       my @func_lines = "void do_l3(){";
       push @func_lines, map {"  a3[$_]=do_l3_n$_(a2);"} 0..$self->l3-1;
       push @func_lines, "}";
       push @functions, join ("\n",@func_lines);
+      $hdr .= "void float_do_l3();\n";
    }
    { #assume input is in rgb, 0 to 255..
-      my @func_lines = "classify_from_rgba32(char* x_in) {";
+      #since this is main-ish, i'll put globals here I guess.
+      my @func_lines = $globals;
+      push @func_lines, "classify_from_rgba32(char* x_in) {";
       push @func_lines, map {"  x[$_] = (float)(x_in[$_]) / 255 ;"} 0..$self->l1-1;
       push @func_lines, "  do_l2();";
       push @func_lines, "  do_l3();\n";
@@ -321,8 +334,9 @@ sub export_c{
 
       push @functions, join ("\n",@func_lines);
    }
-   my $txt = $hdrs . join("\n\n",@functions);
-   return $txt;
+   #my $txt = $hdrs . join("\n\n",@functions);
+   return {header => $hdr, functions => \@functions};
+   #return $txt;
 }
 
 
