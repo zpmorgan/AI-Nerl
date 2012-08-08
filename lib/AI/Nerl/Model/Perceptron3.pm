@@ -265,9 +265,10 @@ sub load_from_dir{
 sub export_c{
    my $self = shift;
    my $hdr = "#include <math.h>\n\n";
-   $hdr .= "extern float*  x;\n";
-   $hdr .= "extern float* a2;\n";
-   $hdr .= "extern float* a3;\n\n";
+   my $externs = '';
+   $externs .= "extern float*  x;\n";
+   $externs .= "extern float* a2;\n";
+   $externs .= "extern float* a3;\n\n";
    my $globals = '';
    $globals .= "float  x[".$self->l1."];\n";
    $globals .= "float a2[".$self->l2."];\n";
@@ -278,9 +279,15 @@ sub export_c{
    for my $i (0..$self->l2-1){
       my @func_lines = "float do_l2_n$i (){";
       push @func_lines, "  float sum = 0;";
+      #for my $j (0..$self->l1-1){
+         #push @func_lines, "  sum += x[$j] * ".$self->theta1->at($i,$j) . ';';
+      #}
+      my @elems;
       for my $j (0..$self->l1-1){
-         push @func_lines, "  sum += x[$j] * ".$self->theta1->at($i,$j) . ';';
+         next if rand() > .001;
+         push @elems, " (x[$j] *1000* ".$self->theta1->at($i,$j) .') ';
       }
+      push @func_lines, 'sum = '.join('+',@elems) . ';';
       push @func_lines, "  float act = tanh(sum);";
       push @func_lines, "  return act;";
       push @func_lines, "}";
@@ -290,14 +297,19 @@ sub export_c{
    for my $i (0..$self->l3-1){
       my @func_lines = "float do_l3_n$i (){";
       push @func_lines, "  float sum = 0;";
+      #for my $j (0..$self->l2-1){
+      #   push @func_lines, "  sum += a2[$j] * ".$self->theta2->at($i,$j) . ';';
+      #}
+      my @elems;
       for my $j (0..$self->l2-1){
-         push @func_lines, "  sum += a2[$j] * ".$self->theta2->at($i,$j) . ';';
+         push @elems, " (a2[$j] * ".$self->theta2->at($i,$j) .') ';
       }
+      push @func_lines, 'sum = '. join('+',@elems) .';';
       push @func_lines, "  float act = tanh(sum);";
       push @func_lines, "  return act;";
       push @func_lines, "}";
       push @functions, join ("\n",@func_lines);
-      $hdr .= "float float_do_l3_n$i(); \n";
+      $hdr .= "float do_l3_n$i(); \n";
    }
    {
       my @func_lines = "void do_l2(){";
@@ -315,19 +327,26 @@ sub export_c{
    }
    { #assume input is in rgb, 0 to 255..
       #since this is main-ish, i'll put globals here I guess.
-      my @func_lines = $globals;
+      my @func_lines;# = $globals;
       push @func_lines, "classify_from_rgba32(char* x_in) {";
-      push @func_lines, map {"  x[$_] = (float)(x_in[$_]) / 255 ;"} 0..$self->l1-1;
+      #push @func_lines, map {"  x[$_] = (float)(x_in[$_]) / 255 ;"} 0..$self->l1-1;
+
+      push @func_lines, "  int xwlsh;";
+      push @func_lines, "  for(xwlsh=0; xwlsh<".$self->l1."; xwlsh++){";
+      push @func_lines, "    x[xwlsh] = (float)(x_in[xwlsh]) / 255 ;";
+      push @func_lines, "  }";
+
       push @func_lines, "  do_l2();";
       push @func_lines, "  do_l3();\n";
 
+      push @func_lines, "  int i;";
       push @func_lines, "  int max_i;";
       push @func_lines, "  float max = -2;";
-      push @func_lines, "  int i;";
       push @func_lines, "  for(i=0;i<".$self->l3.";i++){";
       push @func_lines, "    if(a3[i] > max){";
       push @func_lines, "      max = a3[i];";
       push @func_lines, "      max_i = i;";
+      push @func_lines, "    }";
       push @func_lines, "  }";
       push @func_lines, "  return max_i;";
       push @func_lines, "}";
@@ -335,7 +354,7 @@ sub export_c{
       push @functions, join ("\n",@func_lines);
    }
    #my $txt = $hdrs . join("\n\n",@functions);
-   return {header => $hdr, functions => \@functions};
+   return {header => $hdr, functions => \@functions, externs=>$externs, globals=>$globals};
    #return $txt;
 }
 
