@@ -328,7 +328,7 @@ sub export_c{
    { #assume input is in rgb, 0 to 255..
       #since this is main-ish, i'll put globals here I guess.
       my @func_lines;# = $globals;
-      push @func_lines, "classify_from_rgba32(char* x_in) {";
+      push @func_lines, "int classify_from_rgba32(char* x_in) {";
       #push @func_lines, map {"  x[$_] = (float)(x_in[$_]) / 255 ;"} 0..$self->l1-1;
 
       push @func_lines, "  int xwlsh;";
