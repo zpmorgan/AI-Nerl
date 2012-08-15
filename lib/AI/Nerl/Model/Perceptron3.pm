@@ -266,9 +266,9 @@ sub export_c{
    my $self = shift;
    my $hdr = "#include <math.h>\n\n";
    my $externs = '';
-   $externs .= "extern float*  x;\n";
-   $externs .= "extern float* a2;\n";
-   $externs .= "extern float* a3;\n\n";
+   $externs .= "extern float  x[];\n";
+   $externs .= "extern float a2[];\n";
+   $externs .= "extern float a3[];\n\n";
    my $globals = '';
    $globals .= "float  x[".$self->l1."];\n";
    $globals .= "float a2[".$self->l2."];\n";
@@ -316,14 +316,14 @@ sub export_c{
       push @func_lines, map {"  a2[$_]=do_l2_n$_(x);"} 0..$self->l2-1;
       push @func_lines, "}";
       push @functions, join ("\n",@func_lines);
-      $hdr .= "void float_do_l2();\n";
+      $hdr .= "void do_l2();\n";
    }
    {
       my @func_lines = "void do_l3(){";
       push @func_lines, map {"  a3[$_]=do_l3_n$_(a2);"} 0..$self->l3-1;
       push @func_lines, "}";
       push @functions, join ("\n",@func_lines);
-      $hdr .= "void float_do_l3();\n";
+      $hdr .= "void do_l3();\n";
    }
    { #assume input is in rgb, 0 to 255..
       #since this is main-ish, i'll put globals here I guess.
